@@ -1,0 +1,11 @@
+# Build
+.build/
+dist/
+.swiftpm/
+*.xcodeproj
+
+# Ajustes de máquina: identificador de bundle, identidade de assinatura
+.env
+
+# macOS
+.DS_Store

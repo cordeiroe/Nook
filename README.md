@@ -1,0 +1,154 @@
+# TokenDeck
+
+Painel no notch do macOS para acompanhar consumo de IA e sessões em andamento,
+sem precisar abrir nada.
+
+Em repouso, nada é desenhado: o próprio recorte da tela é o alvo do mouse. Ao
+passar o cursor, um cartão desce com os limites do plano, as sessões vivas, o
+que está tocando e uma prateleira de arquivos. Quando um limite passa de 80%,
+um arco fino acende na borda inferior do notch.
+
+Em telas sem notch físico, o painel usa um recorte virtual no centro do topo e
+se comporta igual.
+
+## Requisitos
+
+- macOS 14 ou superior
+- Xcode 15 ou superior (usa apenas SwiftPM, sem projeto Xcode)
+
+## De onde vêm os dados
+
+Tudo é lido localmente. O app não envia nada para lugar nenhum, com uma única
+exceção: a consulta de cota da MiniMax, que vai para a API deles.
+
+| Dado | Origem |
+|---|---|
+| Limites do plano Claude (5h, semana, créditos) | JSON que o Claude Code entrega à statusline |
+| Consumo por janela e por projeto | `~/.claude/projects/*/*.jsonl` |
+| Sessões vivas do Claude Code | `~/.claude/sessions/<pid>.json` |
+| Sessões, custo e tokens do opencode | `~/.local/share/opencode/opencode.db` (somente leitura) |
+| Cota da MiniMax | `GET /v1/token_plan/remains` |
+| Tocando agora | AppleScript no Spotify e no app Música |
+| Capturas recentes | pasta configurada em `com.apple.screencapture` |
+
+## Instalação
+
+### 1. Identidade de assinatura
+
+```bash
+./tools/make-signing-identity.sh
+```
+
+Cria um certificado local autoassinado. Sem ele o app é assinado ad-hoc, e o
+requisito designado passa a ser o hash do binário, que muda a cada build: o
+macOS trata cada build como um app diferente e repete todos os pedidos de
+permissão. Com o certificado, o requisito vira o identificador do bundle mais o
+certificado, e as autorizações sobrevivem às atualizações.
+
+Não precisa de `sudo` nem de confiar no certificado, e não substitui uma conta
+Apple Developer, necessária apenas para distribuir a terceiros com notarização.
+
+Rode uma vez só: recriar o certificado zera as permissões já concedidas.
+
+### 2. Ajustes de máquina
+
+```bash
+cp .env.example .env
+```
+
+O identificador do bundle entra no requisito designado. Escolha um e não mude
+depois da primeira instalação.
+
+### 3. Build
+
+```bash
+./make-app.sh && open dist/TokenDeck.app
+```
+
+### 4. Limites reais do plano Claude
+
+```bash
+./tools/install-statusline.sh
+```
+
+O Claude Code entrega um JSON à statusline a cada render, e nele vêm os
+percentuais reais das janelas de 5 horas, 7 dias e dos créditos. Esta é a única
+fonte oficial desses números para planos Pro e Max: a Admin API de usage cobre
+organizações de API, não contas do claude.ai.
+
+O instalador preserva a statusline que já existia, que passa a ser chamada pela
+ponte, e guarda um backup do `settings.json`.
+
+Sem esse passo o app cai numa estimativa local calculada a partir dos `.jsonl`.
+Ela é grosseira e o cartão avisa quando está nesse modo. Não confie nela para
+decidir nada.
+
+### 5. Chave da MiniMax, se você usa
+
+```bash
+printf %s "$SUA_CHAVE" | ./.build/debug/tdauth set minimax
+```
+
+Lê de stdin para a chave não aparecer em `argv` nem no histórico do shell.
+Guarda em `credentials.json` com modo `0600`. Use `--keychain` para preferir o
+chaveiro.
+
+## Configuração
+
+`~/Library/Application Support/TokenDeck/config.json`
+
+```jsonc
+{
+  "modules": ["usage", "sessions", "nowPlaying", "shelf"],  // ordem no cartão
+  "alertThreshold": 0.80,          // quando o arco do notch acende
+  "openCodeMonthlyBudgetUSD": 50,  // denominador do gasto MiniMax
+  "refreshInterval": 15            // segundos
+}
+```
+
+Campos ausentes voltam ao padrão sem invalidar o resto do arquivo.
+
+## Ferramentas
+
+| Comando | Para quê |
+|---|---|
+| `./.build/debug/tdprobe` | Imprime tudo que o painel mostraria, em texto |
+| `./.build/debug/tdauth status` | Onde cada credencial está guardada |
+| `./tools/install-statusline.sh` | Instala a ponte da statusline |
+
+## Privacidade
+
+Nada é versionado nem transmitido, fora a chamada de cota à MiniMax.
+
+- `credentials.json` e `claude-limits.json` são gravados com modo `0600`
+- A prateleira guarda caminhos, nunca cópias dos seus arquivos
+- O banco do opencode é aberto somente para leitura, e a conexão nunca é
+  mantida aberta entre consultas, para não atrapalhar o checkpoint do WAL dele
+- `.env` está no `.gitignore`
+
+## Limitações conhecidas
+
+- Os limites reais só chegam enquanto o Claude Code está aberto, porque é ele
+  que executa a statusline. Sem sessão o dado envelhece, e o cartão mostra há
+  quanto tempo foi capturado.
+- As janelas de Dia e Mês são referência, não cota: o teto é escolhido por
+  você. Elas aparecem com barra apagada, sem cor de limite.
+- `spend_limit` nem sempre vem no payload. Quando vier, o medidor de créditos
+  aparece sozinho.
+- A pasta de capturas costuma ser protegida por TCC. O bloco da prateleira tem
+  um atalho para o painel de autorização.
+
+## Estrutura
+
+```
+Sources/TokenDeckCore/   leitura de dados, sem UI
+Sources/TokenDeckApp/    painel do notch e barra de menus
+Sources/tdprobe/         diagnóstico em linha de comando
+Sources/tdauth/          gerência de credenciais
+tools/                   assinatura e ponte da statusline
+attic/                   régua de borda, substituída pelo modo notch
+```
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).
