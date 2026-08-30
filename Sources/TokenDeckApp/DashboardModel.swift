@@ -22,6 +22,11 @@ final class DashboardModel: ObservableObject {
     private let builder = DashboardBuilder()
     private var pump: Task<Void, Never>?
 
+    /// Vigias que tornam a atualizacao imediata em vez de esperar o ciclo.
+    private var refreshPending = false
+    private var limitsWatcher: PathWatcher?
+    private var sessionsWatcher: PathWatcher?
+
     func start() {
         guard pump == nil else { return }
 
@@ -39,6 +44,26 @@ final class DashboardModel: ObservableObject {
                 Task { @MainActor in await DashboardModel.shared.refresh() }
             }
         }
+
+        // Os limites reais do plano sao reescritos pela statusline a cada
+        // render do Claude Code. Esperar o ciclo de 15s desperdicaria a fonte
+        // mais fresca que temos, justamente no numero que mais importa.
+        //
+        // O alvo filtra por mtime porque o proprio app escreve nesta pasta:
+        // sem isso, gravar o historico dispararia um refresh que gravaria o
+        // historico de novo.
+        let limits = PathWatcher(
+            directory: Paths.support,
+            watching: ClaudeLimitsReader().file,
+            minimumInterval: 1
+        )
+        limits.start { Task { @MainActor in await DashboardModel.shared.refresh() } }
+        limitsWatcher = limits
+
+        // Sessoes entrando e saindo de "ocupada" tambem valem em tempo real.
+        let sessions = PathWatcher(directory: Paths.claudeSessions, minimumInterval: 1)
+        sessions.start { Task { @MainActor in await DashboardModel.shared.refresh() } }
+        sessionsWatcher = sessions
 
         Task {
             await MiniMaxClient.shared.onUpdate {
@@ -58,6 +83,10 @@ final class DashboardModel: ObservableObject {
     func stop() {
         pump?.cancel()
         pump = nil
+        limitsWatcher?.stop()
+        sessionsWatcher?.stop()
+        limitsWatcher = nil
+        sessionsWatcher = nil
     }
 
     func addToShelf(_ urls: [URL]) {
@@ -71,6 +100,13 @@ final class DashboardModel: ObservableObject {
     }
 
     func refresh() async {
+        // Vigia e ciclo podem coincidir. Descartar o evento perderia a
+        // atualizacao ate o proximo ciclo, entao ele fica pendente e roda
+        // assim que a leitura corrente termina.
+        if isRefreshing {
+            refreshPending = true
+            return
+        }
         isRefreshing = true
         let cfg = config
         let builder = self.builder
@@ -78,5 +114,10 @@ final class DashboardModel: ObservableObject {
         let fresh = await Task.detached(priority: .utility) { await builder.build(config: cfg) }.value
         snapshot = fresh
         isRefreshing = false
+
+        if refreshPending {
+            refreshPending = false
+            await refresh()
+        }
     }
 }
