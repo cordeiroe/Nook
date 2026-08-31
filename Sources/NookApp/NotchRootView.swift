@@ -75,17 +75,29 @@ struct NotchRootView: View {
     /// físico, fica transparente mas clicável, e é isso que faz o próprio
     /// recorte da tela ser o alvo do hover.
     private var neck: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             notchShape
                 .fill(controller.isOpen || isVirtual ? Color.black : Color.clear)
 
-            if !controller.isOpen, let alert {
-                Capsule()
-                    .fill(Theme.alertTint(alert))
-                    .frame(width: notchSize.width * 0.5, height: 3)
-                    .padding(.bottom, 3)
-                    .shadow(color: Theme.alertTint(alert).opacity(0.7), radius: 4)
+            if !controller.isOpen {
+                if isVirtual {
+                    // Num recorte virtual há pixels para desenhar a marca, e o
+                    // sorriso dela é o próprio traço de alerta.
+                    BrandMark(notchHeight: notchSize.height, alert: alert)
+                        .transition(.opacity)
+                } else if let alert {
+                    // Num notch físico não há onde desenhar dentro do recorte,
+                    // então o aviso é só o traço, colado na borda de baixo.
+                    VStack {
+                        Spacer()
+                        Capsule()
+                            .fill(Theme.alertTint(alert))
+                            .frame(width: notchSize.width * 0.5, height: 3)
+                            .shadow(color: Theme.alertTint(alert).opacity(0.7), radius: 4)
+                            .padding(.bottom, 3)
+                    }
                     .transition(.opacity)
+                }
             }
         }
         .frame(width: notchSize.width, height: notchSize.height)

@@ -11,7 +11,9 @@ Em repouso ele não desenha nada. Passe o mouse sobre o recorte e um painel desc
 de dentro dele.
 
 Em monitor sem notch físico o recorte é desenhado, com a mesma largura do de um
-MacBook, e tudo funciona igual.
+MacBook, e tudo funciona igual. Ali cabe a marca: a palavra com um sorriso por
+baixo do *oo*. Num MacBook o recorte é a câmera, não tem pixel, e a marca não
+aparece.
 
 ## O que ele mostra
 
@@ -21,8 +23,8 @@ O painel tem abas. Uma coisa por vez, escolhida por você.
 semana e nos créditos, com os números oficiais da Anthropic, não estimativa. E
 a cota da MiniMax, se você usa. Mais consumo por dia e por mês como referência.
 
-Quando um limite passa de 80%, um traço colorido acende na borda inferior do
-recorte. É o único momento em que o Nook aparece sem você pedir.
+Quando um limite passa de 80%, o sorriso da marca acende em laranja. É o único
+momento em que o Nook aparece sem você pedir, e a única coisa que usa laranja.
 
 **Agenda.** O que vem a seguir nas próximas 36 horas, lendo o Calendário do
 sistema, então enxerga iCloud, Google e Exchange juntos. O que está acontecendo

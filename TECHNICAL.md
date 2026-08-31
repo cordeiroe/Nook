@@ -243,6 +243,23 @@ de cota à MiniMax e o download da capa do álbum no CDN do Spotify.
   que passam pela área de transferência. Desligue em
   `shelfCapturesPastedImages`.
 
+## Marca
+
+A marca é a palavra `nook` com um sorriso por baixo do `oo`. O arco tem a mesma
+largura e espessura do traço de alerta, e por isso ele **é** o traço: passando
+de 80%, o sorriso acende em laranja em vez de aparecer um elemento novo. Laranja
+não é usado em mais nada, para não perder o significado de aviso.
+
+Só aparece no recorte virtual. Num MacBook o recorte é a câmera e não existem
+pixels ali para desenhar.
+
+A fonte é Bricolage Grotesque SemiBold, empacotada em `Resources/` sob a SIL
+Open Font License e registrada em tempo de execução com
+`CTFontManagerRegisterFontsForURL`. Ela não vai como recurso do SwiftPM porque
+isso geraria um bundle separado que o `make-app.sh` teria de copiar de qualquer
+forma. Se o registro falhar, a marca cai numa fonte do sistema em vez de
+desaparecer.
+
 ## Estrutura
 
 ```
@@ -250,6 +267,7 @@ Sources/NookCore/    leitura de dados, sem UI
 Sources/NookApp/     painel do notch e barra de menus
 Sources/nookprobe/   diagnóstico em linha de comando
 Sources/nookauth/    gerência de credenciais
+Resources/           fonte da marca, empacotada no app
 tools/               assinatura e ponte da statusline
 attic/               régua de borda, substituída pelo modo notch
 ```

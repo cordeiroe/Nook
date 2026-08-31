@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.current = self
+        Brand.registerFont()
         let model = DashboardModel.shared
 
         // O painel primeiro: qualquer coisa que dependa de permissao do sistema
