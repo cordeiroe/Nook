@@ -257,12 +257,17 @@ a identidade sumir.
 Só aparece no recorte virtual. Num MacBook o recorte é a câmera e não existem
 pixels ali para desenhar.
 
-O arco não é uma parábola nem um traço de espessura constante. O CSS do desenho pede `border-radius: 0 0 26px 26px`
+O arco não é um traço de espessura constante. O CSS do desenho pede `border-radius: 0 0 26px 26px`
 numa caixa de 26x8, e o navegador encolhe raios que não cabem: o raio real vira
 8, e o traço fica reto no meio com as pontas viradas para cima. Desenhar uma
 parábola no lugar produzia um U que abraçava a palavra inteira. Na largura do
 desenho as pontas ainda subiam dentro do `n` e do `k`, então o arco foi
 estreitado para caber sob o `oo`, que é o que o desenho descreve em texto.
+
+A geometria literal do CSS seria canto, reta, canto. Nas proporções do recorte
+quase metade do arco virava reta, e no grid de pixel de uma tela 1x isso
+endurecia o desenho. Duas cúbicas simétricas dão a mesma silhueta sem o trecho
+reto.
 
 O afinamento nas pontas também vem do CSS: com a borda de baixo em `w` e as
 laterais em zero, a espessura interpola de `w` até nada ao longo do canto. Por

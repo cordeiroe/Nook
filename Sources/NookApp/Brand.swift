@@ -37,52 +37,51 @@ enum Brand {
     }
 }
 
-/// O sorriso: a borda inferior de uma caixa com os cantos de baixo
-/// arredondados, afinando até sumir nas pontas.
+/// O sorriso: uma curva contínua que engrossa no meio e afina até sumir nas
+/// pontas.
 ///
-/// Não é uma parábola nem um traço de espessura constante. O CSS do desenho
-/// pede `border-radius: 0 0 26px 26px` numa caixa de 26x8, e o navegador
-/// encolhe raios que não cabem: o raio real vira 8, e o traço fica reto no meio
-/// com as pontas viradas para cima.
+/// A espessura variável vem do CSS do desenho. Com a borda de baixo em `w` e as
+/// laterais em zero, ela interpola de `w` até nada ao longo do canto
+/// arredondado. Um caminho traçado com espessura constante não reproduz isso,
+/// então a figura é preenchida entre duas curvas que partem e chegam no mesmo
+/// ponto e por isso se fecham em ponta.
 ///
-/// O afinamento também vem de lá. Com a borda de baixo em `w` e as laterais em
-/// zero, a espessura interpola de `w` até nada ao longo do canto. Por isso a
-/// figura é preenchida entre duas curvas, a externa da caixa e a interna, que
-/// partem e chegam no mesmo ponto e se fecham em ponta. Traçar um caminho com
-/// espessura constante perderia esse detalhe.
+/// A geometria literal do CSS seria canto, reta, canto. Nas proporções do
+/// recorte quase metade do arco virava reta, e no grid de pixel de uma tela 1x
+/// isso endurecia o desenho. Duas cúbicas simétricas dão a mesma silhueta sem
+/// o trecho reto.
 struct Smile: Shape {
     /// Espessura no ponto mais grosso, no meio do arco.
     var thickness: CGFloat
 
-    func path(in rect: CGRect) -> Path {
-        let largura = rect.width, altura = rect.height
-        let w = min(thickness, altura)
-        let raio = min(altura, largura / 2)
-        guard raio > 0, largura > 2 * raio else { return Path() }
+    /// Quanto os controles se afastam do centro. Mais alto deixa as pontas
+    /// saindo na horizontal, como numa boca, em vez de mergulhando.
+    private let spread: CGFloat = 0.37
 
-        // Constante clássica para aproximar um quarto de elipse por Bézier.
-        let k: CGFloat = 0.5523
-        let raioInterno = raio - w
-        let base = rect.minY + altura
-        let baseInterna = base - w
-        let ponta = rect.minY + altura - raio   // onde as duas curvas se encontram
+    func path(in rect: CGRect) -> Path {
+        let profundidade = rect.height
+        let w = min(thickness, profundidade)
+        guard rect.width > 0, profundidade > 0 else { return Path() }
+
+        let esquerda = CGPoint(x: rect.minX, y: rect.minY)
+        let direita = CGPoint(x: rect.maxX, y: rect.minY)
+        let dx = rect.width * spread
+
+        /// Controles de uma cúbica simétrica cuja flecha no centro é `flecha`.
+        /// O fator 4/3 compensa o encolhimento da Bézier em relação aos
+        /// pontos de controle.
+        func controles(_ flecha: CGFloat) -> (CGPoint, CGPoint) {
+            let y = rect.minY + flecha * 4 / 3
+            return (CGPoint(x: rect.minX + dx, y: y), CGPoint(x: rect.maxX - dx, y: y))
+        }
+
+        let (externo1, externo2) = controles(profundidade)
+        let (interno1, interno2) = controles(profundidade - w)
 
         var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: ponta))
-        p.addCurve(to: CGPoint(x: rect.minX + raio, y: base),
-                   control1: CGPoint(x: rect.minX, y: ponta + k * raio),
-                   control2: CGPoint(x: rect.minX + raio - k * raio, y: base))
-        p.addLine(to: CGPoint(x: rect.maxX - raio, y: base))
-        p.addCurve(to: CGPoint(x: rect.maxX, y: ponta),
-                   control1: CGPoint(x: rect.maxX - raio + k * raio, y: base),
-                   control2: CGPoint(x: rect.maxX, y: ponta + k * raio))
-        p.addCurve(to: CGPoint(x: rect.maxX - raio, y: baseInterna),
-                   control1: CGPoint(x: rect.maxX, y: ponta + k * raioInterno),
-                   control2: CGPoint(x: rect.maxX - raio + k * raio, y: baseInterna))
-        p.addLine(to: CGPoint(x: rect.minX + raio, y: baseInterna))
-        p.addCurve(to: CGPoint(x: rect.minX, y: ponta),
-                   control1: CGPoint(x: rect.minX + raio - k * raio, y: baseInterna),
-                   control2: CGPoint(x: rect.minX, y: ponta + k * raioInterno))
+        p.move(to: esquerda)
+        p.addCurve(to: direita, control1: externo1, control2: externo2)
+        p.addCurve(to: esquerda, control1: interno2, control2: interno1)
         p.closeSubpath()
         return p
     }
@@ -99,9 +98,10 @@ struct BrandMark: View {
 
     private var size: CGFloat { min(13, max(9, notchHeight * 0.44)) }
     /// Proporções medidas para o arco ficar sob o `oo`. Na largura do desenho
-    /// as pontas subiam dentro do `n` e do `k`.
-    private var smileWidth: CGFloat { size * 1.38 }
-    private var smileDepth: CGFloat { size * 0.38 }
+    /// as pontas subiam dentro do `n` e do `k`. Com a curva contínua as pontas
+    /// saem mais rasas, então ela pode ser um pouco mais larga sem encostar.
+    private var smileWidth: CGFloat { size * 1.58 }
+    private var smileDepth: CGFloat { size * 0.33 }
     private var thickness: CGFloat { max(alert == nil ? 1.5 : 2, size * (alert == nil ? 0.115 : 0.155)) }
     /// O traço preenchido ocupa de `base - espessura` até a base, enquanto o
     /// traçado ficava centrado na curva. Descontar metade da espessura mantém a
