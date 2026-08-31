@@ -87,19 +87,17 @@ struct Smile: Shape {
     }
 }
 
-/// Marca desenhada dentro do recorte, quando ele é virtual. Num notch físico
-/// não existem pixels para desenhar.
-struct BrandMark: View {
-    /// Altura do recorte, para a marca acompanhar telas com barra de menus
-    /// de alturas diferentes.
-    let notchHeight: CGFloat
+/// A marca em si, num tamanho qualquer. Separada do recorte para poder ser
+/// desenhada grande, como na exportação do logo, sem duplicar as proporções.
+struct BrandLockup: View {
+    /// Corpo da fonte. Todo o resto é proporcional a ele.
+    let size: CGFloat
     /// Fração do medidor mais pressionado, quando passa do limite configurado.
-    let alert: Double?
+    var alert: Double?
 
-    private var size: CGFloat { min(13, max(9, notchHeight * 0.44)) }
     /// Proporções medidas para o arco ficar sob o `oo`. Na largura do desenho
-    /// as pontas subiam dentro do `n` e do `k`. Com a curva contínua as pontas
-    /// saem mais rasas, então ela pode ser um pouco mais larga sem encostar.
+    /// as pontas subiam dentro do `n` e do `k`. Com a curva contínua elas saem
+    /// mais rasas, então o arco pode ser mais largo sem encostar.
     private var smileWidth: CGFloat { size * 1.58 }
     private var smileDepth: CGFloat { size * 0.33 }
     private var thickness: CGFloat { max(alert == nil ? 1.5 : 2, size * (alert == nil ? 0.115 : 0.155)) }
@@ -127,5 +125,19 @@ struct BrandMark: View {
                 .offset(y: -smileLift)
                 .animation(.easeInOut(duration: 0.3), value: alert != nil)
         }
+    }
+}
+
+/// Marca desenhada dentro do recorte, quando ele é virtual. Num notch físico
+/// não existem pixels para desenhar.
+struct BrandMark: View {
+    /// Altura do recorte, para a marca acompanhar telas com barra de menus
+    /// de alturas diferentes.
+    let notchHeight: CGFloat
+    /// Fração do medidor mais pressionado, quando passa do limite configurado.
+    let alert: Double?
+
+    var body: some View {
+        BrandLockup(size: min(13, max(9, notchHeight * 0.44)), alert: alert)
     }
 }

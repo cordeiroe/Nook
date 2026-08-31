@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/hero.png" alt="Nook: o recorte no topo da tela com o painel de consumo aberto" width="820">
+</p>
+
 # Nook
 
 Uma central de controle no notch do Mac.

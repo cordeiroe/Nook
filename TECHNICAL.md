@@ -274,6 +274,11 @@ laterais em zero, a espessura interpola de `w` até nada ao longo do canto. Por
 isso a figura é preenchida entre duas curvas, a externa da caixa e a interna,
 que partem e chegam no mesmo ponto e se fecham em ponta.
 
+A arte do README é gerada do mesmo `Brand.swift` que o app usa, por
+`tools/export-brand.sh`, para nunca divergir do que aparece na tela. Como peça
+de marca o sorriso vai laranja, igual ao artboard de identidade; na interface
+ele só acende assim em alerta, e essa regra continua valendo lá.
+
 A fonte é Bricolage Grotesque SemiBold, empacotada em `Resources/` sob a SIL
 Open Font License e registrada em tempo de execução com
 `CTFontManagerRegisterFontsForURL`. Ela não vai como recurso do SwiftPM porque
