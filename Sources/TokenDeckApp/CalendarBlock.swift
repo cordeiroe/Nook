@@ -78,8 +78,8 @@ struct EventRow: View {
 
             Spacer(minLength: 4)
 
-            if let url = event.meetingURL {
-                Button("Entrar") { NSWorkspace.shared.open(url) }
+            if event.meetingURL != nil {
+                Button("Entrar", action: abrir)
                     .buttonStyle(.plain)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(destaque ? .white : .white.opacity(0.6))
@@ -90,9 +90,36 @@ struct EventRow: View {
                     )
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.white.opacity(hovering ? 0.06 : 0))
+        )
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .onTapGesture(perform: abrir)
+        .help(ajuda)
+    }
+
+    /// Clicar na linha entra na chamada quando há link, e abre o compromisso no
+    /// app Calendário quando não há. Um evento sem ação alguma obrigaria a
+    /// procurar a mesma informação em outro lugar.
+    private func abrir() {
+        if let url = event.meetingURL {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        guard let identificador = event.eventIdentifier,
+              let url = URL(string: "ical://ekevent/\(identificador)?method=show&options=more")
+        else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private var ajuda: String {
+        if let url = event.meetingURL { return "Entrar em \(url.host ?? url.absoluteString)" }
+        if let local = event.location { return local }
+        return "Abrir no Calendário"
     }
 
     private var destaque: Bool { event.isNow || event.startsSoon }

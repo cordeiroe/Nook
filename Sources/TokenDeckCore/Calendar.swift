@@ -3,6 +3,8 @@ import Foundation
 
 public struct AgendaEvent: Sendable, Equatable, Identifiable {
     public let id: String
+    /// Identificador do EventKit, para abrir o evento no app Calendário.
+    public let eventIdentifier: String?
     public let title: String
     public let start: Date
     public let end: Date
@@ -82,12 +84,33 @@ public final class AgendaReader: @unchecked Sendable {
         guard !calendarios.isEmpty else { return [] }
 
         let predicado = store.predicateForEvents(withStart: inicio, end: fim, calendars: calendarios)
-        return store.events(matching: predicado)
+        let brutos = store.events(matching: predicado)
             .filter { $0.endDate > agora }
             .filter { !$0.isAllDay || Calendar.current.isDateInToday($0.startDate) }
             .sorted { $0.startDate < $1.startDate }
+
+        return Self.deduplicate(brutos)
             .prefix(limit)
             .map(Self.convert)
+    }
+
+    /// A mesma conta adicionada duas vezes em Contas de Internet, ou um convite
+    /// que caiu em dois calendários, faz o EventKit devolver uma cópia por
+    /// calendário. O app Calendário junta essas cópias; aqui é preciso fazer o
+    /// mesmo, senão o compromisso aparece repetido.
+    ///
+    /// A chave junta o identificador externo, o iCalUID, com o horário de
+    /// início. O iCalUID sozinho não serve: ele é idêntico em todas as
+    /// ocorrências de um evento recorrente, e uma reunião diária perderia as
+    /// próximas datas. Com o horário junto, duas cópias do mesmo compromisso
+    /// colapsam e duas ocorrências diferentes continuam separadas.
+    private static func deduplicate(_ eventos: [EKEvent]) -> [EKEvent] {
+        var vistos = Set<String>()
+        return eventos.filter { evento in
+            let identidade = evento.calendarItemExternalIdentifier ?? evento.title ?? ""
+            let chave = "\(identidade)|\(evento.startDate.timeIntervalSince1970)"
+            return vistos.insert(chave).inserted
+        }
     }
 
     private static func convert(_ event: EKEvent) -> AgendaEvent {
@@ -96,7 +119,10 @@ public final class AgendaReader: @unchecked Sendable {
             cor = (Double(componentes[0]), Double(componentes[1]), Double(componentes[2]))
         }
         return AgendaEvent(
-            id: event.eventIdentifier ?? UUID().uuidString,
+            // Inclui o início: ForEach usa este id, e ocorrências da mesma
+            // série compartilham o identificador externo.
+            id: "\(event.calendarItemExternalIdentifier ?? event.eventIdentifier ?? UUID().uuidString)|\(event.startDate.timeIntervalSince1970)",
+            eventIdentifier: event.eventIdentifier,
             title: event.title ?? "(sem título)",
             start: event.startDate,
             end: event.endDate,
@@ -112,8 +138,14 @@ public final class AgendaReader: @unchecked Sendable {
     /// costumam deixá-lo na localização ou no corpo da descrição.
     private static func meetingURL(in event: EKEvent) -> URL? {
         if let url = event.url, isMeeting(url) { return url }
-        for campo in [event.location, event.notes] {
-            guard let campo, let achado = firstMeetingLink(in: campo) else { continue }
+
+        // Uma URL escrita no campo de localização é quase sempre o link da
+        // chamada, mesmo em domínio próprio como zoom.suaempresa.com. Exigir
+        // que ela batesse com uma lista de provedores escondia justamente as
+        // reuniões de empresa, que são as que mais importam.
+        if let local = event.location, let achado = firstLink(in: local) { return achado }
+
+        if let notas = event.notes, let achado = firstLink(in: notas, apenasReuniao: true) {
             return achado
         }
         return event.url
@@ -122,20 +154,27 @@ public final class AgendaReader: @unchecked Sendable {
     private static let meetingHosts = [
         "meet.google.com", "zoom.us", "teams.microsoft.com", "teams.live.com",
         "whereby.com", "meet.jit.si", "webex.com", "chime.aws", "around.co",
+        "gather.town", "discord.gg", "meet.hey.com",
     ]
+
+    /// Palavras que denunciam um link de chamada em domínio próprio.
+    private static let meetingHints = ["zoom", "meet", "call", "webinar", "huddle", "conf"]
 
     private static func isMeeting(_ url: URL) -> Bool {
         guard let host = url.host?.lowercased() else { return false }
-        return meetingHosts.contains { host == $0 || host.hasSuffix(".\($0)") }
+        if meetingHosts.contains(where: { host == $0 || host.hasSuffix(".\($0)") }) { return true }
+        return meetingHints.contains { host.contains($0) }
     }
 
     private static let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
 
-    private static func firstMeetingLink(in texto: String) -> URL? {
+    private static func firstLink(in texto: String, apenasReuniao: Bool = false) -> URL? {
         guard let detector else { return nil }
         let range = NSRange(texto.startIndex..<texto.endIndex, in: texto)
         for match in detector.matches(in: texto, options: [], range: range) {
-            if let url = match.url, isMeeting(url) { return url }
+            guard let url = match.url, url.scheme?.hasPrefix("http") == true else { continue }
+            if apenasReuniao && !isMeeting(url) { continue }
+            return url
         }
         return nil
     }
