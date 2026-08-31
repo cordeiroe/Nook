@@ -38,28 +38,52 @@ enum Brand {
 }
 
 /// O sorriso: a borda inferior de uma caixa com os cantos de baixo
-/// arredondados.
+/// arredondados, afinando até sumir nas pontas.
 ///
-/// Não é uma parábola. O CSS do desenho pede `border-radius: 0 0 26px 26px`
-/// numa caixa de 26x8, e o navegador encolhe raios que não cabem: o raio real
-/// vira 8. O traço fica reto no meio com as pontas viradas para cima, e é isso
-/// que faz o sorriso caber sob o `oo` em vez de abraçar a palavra inteira.
+/// Não é uma parábola nem um traço de espessura constante. O CSS do desenho
+/// pede `border-radius: 0 0 26px 26px` numa caixa de 26x8, e o navegador
+/// encolhe raios que não cabem: o raio real vira 8, e o traço fica reto no meio
+/// com as pontas viradas para cima.
+///
+/// O afinamento também vem de lá. Com a borda de baixo em `w` e as laterais em
+/// zero, a espessura interpola de `w` até nada ao longo do canto. Por isso a
+/// figura é preenchida entre duas curvas, a externa da caixa e a interna, que
+/// partem e chegam no mesmo ponto e se fecham em ponta. Traçar um caminho com
+/// espessura constante perderia esse detalhe.
 struct Smile: Shape {
+    /// Espessura no ponto mais grosso, no meio do arco.
+    var thickness: CGFloat
+
     func path(in rect: CGRect) -> Path {
-        let raio = min(rect.height, rect.width / 2)
+        let largura = rect.width, altura = rect.height
+        let w = min(thickness, altura)
+        let raio = min(altura, largura / 2)
+        guard raio > 0, largura > 2 * raio else { return Path() }
+
+        // Constante clássica para aproximar um quarto de elipse por Bézier.
+        let k: CGFloat = 0.5523
+        let raioInterno = raio - w
+        let base = rect.minY + altura
+        let baseInterna = base - w
+        let ponta = rect.minY + altura - raio   // onde as duas curvas se encontram
+
         var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.maxY - raio))
-        p.addArc(
-            tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
-            tangent2End: CGPoint(x: rect.midX, y: rect.maxY),
-            radius: raio
-        )
-        p.addLine(to: CGPoint(x: rect.maxX - raio, y: rect.maxY))
-        p.addArc(
-            tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
-            tangent2End: CGPoint(x: rect.maxX, y: rect.minY),
-            radius: raio
-        )
+        p.move(to: CGPoint(x: rect.minX, y: ponta))
+        p.addCurve(to: CGPoint(x: rect.minX + raio, y: base),
+                   control1: CGPoint(x: rect.minX, y: ponta + k * raio),
+                   control2: CGPoint(x: rect.minX + raio - k * raio, y: base))
+        p.addLine(to: CGPoint(x: rect.maxX - raio, y: base))
+        p.addCurve(to: CGPoint(x: rect.maxX, y: ponta),
+                   control1: CGPoint(x: rect.maxX - raio + k * raio, y: base),
+                   control2: CGPoint(x: rect.maxX, y: ponta + k * raio))
+        p.addCurve(to: CGPoint(x: rect.maxX - raio, y: baseInterna),
+                   control1: CGPoint(x: rect.maxX, y: ponta + k * raioInterno),
+                   control2: CGPoint(x: rect.maxX - raio + k * raio, y: baseInterna))
+        p.addLine(to: CGPoint(x: rect.minX + raio, y: baseInterna))
+        p.addCurve(to: CGPoint(x: rect.minX, y: ponta),
+                   control1: CGPoint(x: rect.minX + raio - k * raio, y: baseInterna),
+                   control2: CGPoint(x: rect.minX, y: ponta + k * raioInterno))
+        p.closeSubpath()
         return p
     }
 }
@@ -78,8 +102,11 @@ struct BrandMark: View {
     /// as pontas subiam dentro do `n` e do `k`.
     private var smileWidth: CGFloat { size * 1.38 }
     private var smileDepth: CGFloat { size * 0.38 }
-    private var smileLift: CGFloat { size * 0.23 }
-    private var stroke: CGFloat { alert == nil ? 1.5 : 2 }
+    private var thickness: CGFloat { max(alert == nil ? 1.5 : 2, size * (alert == nil ? 0.115 : 0.155)) }
+    /// O traço preenchido ocupa de `base - espessura` até a base, enquanto o
+    /// traçado ficava centrado na curva. Descontar metade da espessura mantém a
+    /// tinta no mesmo lugar de antes.
+    private var smileLift: CGFloat { size * 0.23 - thickness / 2 }
 
     private var color: Color {
         guard let alert else { return Brand.ink.opacity(0.5) }
@@ -94,8 +121,8 @@ struct BrandMark: View {
                 .foregroundStyle(Brand.ink)
                 .fixedSize()
 
-            Smile()
-                .stroke(color, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+            Smile(thickness: thickness)
+                .fill(color)
                 .frame(width: smileWidth, height: smileDepth)
                 .offset(y: -smileLift)
                 .animation(.easeInOut(duration: 0.3), value: alert != nil)
