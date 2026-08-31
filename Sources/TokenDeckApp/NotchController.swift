@@ -184,7 +184,8 @@ final class NotchController: NSObject, ObservableObject {
                     onSelect: { _ in },
                     onDrop: { _ in }, onRemove: { _ in },
                     onClipboardCopy: { _ in }, onClipboardRemove: { _ in },
-                    onClipboardClear: {}
+                    onClipboardClear: {},
+                    onMediaCommand: { _ in }
                 )
                 .frame(width: Self.cardWidth)
             )

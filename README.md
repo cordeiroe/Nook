@@ -28,7 +28,7 @@ exceção: a consulta de cota da MiniMax, que vai para a API deles.
 | Sessões vivas do Claude Code | `~/.claude/sessions/<pid>.json` |
 | Sessões, custo e tokens do opencode | `~/.local/share/opencode/opencode.db` (somente leitura) |
 | Cota da MiniMax | `GET /v1/token_plan/remains` |
-| Tocando agora | AppleScript no Spotify e no app Música |
+| Tocando agora | AppleScript no Spotify e no app Música; capa vinda do CDN do Spotify |
 | Capturas recentes | pasta de capturas e imagens na área de transferência |
 | Área de transferência | `NSPasteboard`, consultada a cada 0,6s |
 
@@ -146,7 +146,8 @@ Só texto é guardado, no máximo 20 KB por item, em `clipboard.json` com modo
 
 ## Privacidade
 
-Nada é versionado nem transmitido, fora a chamada de cota à MiniMax.
+Nada é versionado nem transmitido, fora duas requisições de saída: a consulta
+de cota à MiniMax e o download da capa do álbum no CDN do Spotify.
 
 - `credentials.json`, `claude-limits.json` e `clipboard.json` são gravados com
   modo `0600`
@@ -162,6 +163,8 @@ Nada é versionado nem transmitido, fora a chamada de cota à MiniMax.
   quanto tempo foi capturado.
 - As janelas de Dia e Mês são referência, não cota: o teto é escolhido por
   você. Elas aparecem com barra apagada, sem cor de limite.
+- A capa do álbum vem de `artwork url`, que só o Spotify expõe. No app Música
+  o bloco aparece sem capa.
 - `spend_limit` nem sempre vem no payload. Quando vier, o medidor de créditos
   aparece sozinho.
 - A pasta de capturas costuma ser protegida por TCC. O bloco da prateleira tem

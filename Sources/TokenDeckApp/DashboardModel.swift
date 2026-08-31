@@ -118,6 +118,16 @@ final class DashboardModel: ObservableObject {
         Task { await refresh() }
     }
 
+    /// Manda o comando e relê logo em seguida: esperar o ciclo faria o botão
+    /// de play parecer travado por até 15 segundos.
+    func mediaCommand(_ command: NowPlayingReader.Command) {
+        Task.detached(priority: .userInitiated) {
+            NowPlayingReader().send(command)
+            try? await Task.sleep(for: .milliseconds(300))
+            await DashboardModel.shared.refresh()
+        }
+    }
+
     func copyBack(_ item: ClipboardItem) {
         builder.clipboard.copyBack(item)
     }

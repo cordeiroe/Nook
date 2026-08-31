@@ -45,6 +45,14 @@ for provider in snap.providers {
     if let w = provider.warning { print("     \u{001B}[2m\(w)\u{001B}[0m") }
 }
 
+if let m = snap.nowPlaying {
+    header("TOCANDO")
+    print("  \(m.title)")
+    print("  \(m.artist) · \(m.album)")
+    print("  \(m.app)  \(m.isPlaying ? "tocando" : "pausado")  \(NowPlaying.clock(m.position(at: Date()))) / \(NowPlaying.clock(m.duration))  \(bar(m.progress()))")
+    print("  capa: \(m.artworkURL?.absoluteString ?? "sem capa")")
+}
+
 header("LEGENDA")
 print("  *  entra no anel (limite real)      ~  teto estimado, não vem do provider")
 

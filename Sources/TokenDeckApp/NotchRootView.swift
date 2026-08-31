@@ -37,7 +37,8 @@ struct NotchRootView: View {
                         onRemove: model.removeFromShelf,
                         onClipboardCopy: model.copyBack,
                         onClipboardRemove: model.removeFromClipboard,
-                        onClipboardClear: model.clearClipboard
+                        onClipboardClear: model.clearClipboard,
+                        onMediaCommand: model.mediaCommand
                     ),
                     height: controller.cardHeight,
                     scrolls: controller.cardScrolls
@@ -121,6 +122,7 @@ struct NotchCardContent: View {
     let onClipboardCopy: (ClipboardItem) -> Void
     let onClipboardRemove: (ClipboardItem) -> Void
     let onClipboardClear: () -> Void
+    let onMediaCommand: (NowPlayingReader.Command) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -155,7 +157,7 @@ struct NotchCardContent: View {
             }
         case .nowPlaying:
             if let playing = snapshot.nowPlaying {
-                NowPlayingBlock(playing: playing)
+                NowPlayingBlock(playing: playing, onCommand: onMediaCommand)
             } else {
                 Placeholder(text: "Nada tocando no Spotify nem no app Música.")
             }
@@ -327,31 +329,6 @@ struct SessionsBlock: View {
         let desde = s.statusSince ?? s.updatedAt
         let estado = s.status == .busy ? "ocupada há" : "ociosa há"
         return "\(origem) · \(s.shortDirectory) · \(estado) \(Format.elapsed(since: desde))"
-    }
-}
-
-struct NowPlayingBlock: View {
-    let playing: NowPlaying
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: playing.isPlaying ? "waveform" : "pause.fill")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.75))
-                .frame(width: 16)
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(playing.title)
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
-                Text("\(playing.artist) · \(playing.app)")
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.white.opacity(0.36))
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-        }
     }
 }
 
