@@ -18,6 +18,7 @@ import Security
 public enum Secrets {
     public enum Slot: String, CaseIterable, Sendable, Codable {
         case minimax = "TokenDeck-minimax"
+        case notion = "TokenDeck-notion"
 
         public var short: String {
             rawValue.replacingOccurrences(of: "TokenDeck-", with: "")
@@ -26,6 +27,7 @@ public enum Secrets {
         public var label: String {
             switch self {
             case .minimax: return "MiniMax API key"
+            case .notion:  return "Notion integration token"
             }
         }
     }

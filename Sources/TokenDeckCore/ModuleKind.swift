@@ -39,8 +39,7 @@ public enum ModuleKind: String, Codable, Sendable, CaseIterable {
     /// Modulos ainda nao implementados aparecem na config mas nao desenham nada.
     public var isImplemented: Bool {
         switch self {
-        case .usage, .sessions, .nowPlaying, .shelf, .clipboard: return true
-        case .calendar, .notion: return false
+        case .usage, .sessions, .nowPlaying, .shelf, .clipboard, .calendar, .notion: return true
         }
     }
 }

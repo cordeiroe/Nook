@@ -31,6 +31,8 @@ exceção: a consulta de cota da MiniMax, que vai para a API deles.
 | Tocando agora | AppleScript no Spotify e no app Música; capa vinda do CDN do Spotify |
 | Capturas recentes | pasta de capturas e imagens na área de transferência |
 | Área de transferência | `NSPasteboard`, consultada a cada 0,6s |
+| Agenda | EventKit, que enxerga iCloud, Google e Exchange do sistema |
+| Notion | `POST /v1/pages` na API do Notion |
 
 ## Instalação
 
@@ -94,13 +96,39 @@ Lê de stdin para a chave não aparecer em `argv` nem no histórico do shell.
 Guarda em `credentials.json` com modo `0600`. Use `--keychain` para preferir o
 chaveiro.
 
+## Notion
+
+Para salvar links no Notion:
+
+1. Crie uma integração interna em <https://www.notion.so/my-integrations>
+2. Compartilhe o banco de dados com ela, pelo menu de três pontos da página
+3. Guarde o token e aponte o banco:
+
+```bash
+printf %s "$TOKEN" | ./.build/debug/tdauth set notion
+```
+
+```jsonc
+{ "notionDatabaseID": "id que aparece na URL do banco" }
+```
+
+O nome das propriedades muda de banco para banco, então o cliente lê o esquema
+e descobre onde cada coisa vai: a propriedade do tipo `title` recebe o texto, a
+primeira `url` recebe o link, e assim por diante. Um banco montado à mão
+funciona sem renomear nada. As colunas úteis são título, URL, um `select` para
+o tipo, um `rich_text` para notas e uma data.
+
+O tipo é deduzido do domínio: YouTube e Vimeo viram Vídeo; X e Bluesky, Tweet;
+GitHub e GitLab, Repositório; Hacker News e Reddit, Fórum; o resto, Artigo.
+Texto sem link vira Nota.
+
 ## Configuração
 
 `~/Library/Application Support/TokenDeck/config.json`
 
 ```jsonc
 {
-  "modules": ["usage", "sessions", "nowPlaying", "clipboard", "shelf"],
+  "modules": ["usage", "calendar", "sessions", "nowPlaying", "clipboard", "shelf", "notion"],
   "selectedModule": "usage",         // aba aberta
   "alertThreshold": 0.80,          // quando o arco do notch acende
   "openCodeMonthlyBudgetUSD": 50,  // denominador do gasto MiniMax
@@ -163,6 +191,9 @@ de cota à MiniMax e o download da capa do álbum no CDN do Spotify.
   quanto tempo foi capturado.
 - As janelas de Dia e Mês são referência, não cota: o teto é escolhido por
   você. Elas aparecem com barra apagada, sem cor de limite.
+- A agenda usa EventKit, então só enxerga contas configuradas em Ajustes do
+  Sistema > Contas de Internet. Calendário aberto apenas no navegador não
+  aparece.
 - A capa do álbum vem de `artwork url`, que só o Spotify expõe. No app Música
   o bloco aparece sem capa.
 - `spend_limit` nem sempre vem no payload. Quando vier, o medidor de créditos

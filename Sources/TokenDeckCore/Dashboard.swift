@@ -68,6 +68,10 @@ public struct DashboardSnapshot: Sendable, Equatable {
     public var nowPlaying: NowPlaying?
     public var shelf: [ShelfItem] = []
     public var clipboard: [ClipboardItem] = []
+    public var agenda: [AgendaEvent] = []
+    public var notionRecent: [NotionSavedItem] = []
+    public var notionReady = false
+    public var agendaAccess: AgendaAccess = .notDetermined
     public var shelfAccess: ShelfStore.Access = .ok
     public var capturedAt: Date = .distantPast
     public var errors: [String] = []
@@ -95,6 +99,7 @@ public final class DashboardBuilder: @unchecked Sendable {
     private let limits = ClaudeLimitsReader()
     public let shelf = ShelfStore()
     public let clipboard = ClipboardStore()
+    private let agenda = AgendaReader()
 
     public init() {
         Self.migrateIfNeeded()
@@ -134,6 +139,19 @@ public final class DashboardBuilder: @unchecked Sendable {
         ]
         if config.modules.contains(ModuleKind.nowPlaying.rawValue) {
             snap.nowPlaying = music.read()
+        }
+
+        if config.modules.contains(ModuleKind.notion.rawValue) {
+            snap.notionReady = Secrets.read(.notion) != nil && !config.notionDatabaseID.isEmpty
+            snap.notionRecent = NotionHistory.shared.current
+        }
+
+        if config.modules.contains(ModuleKind.calendar.rawValue) {
+            // Pede permissão aqui de propósito: `build` já roda fora da main
+            // thread, e o diálogo do sistema bloqueia quem chamou.
+            agenda.requestAccessIfNeeded()
+            snap.agendaAccess = agenda.access
+            snap.agenda = agenda.upcoming()
         }
 
         if config.modules.contains(ModuleKind.clipboard.rawValue) {

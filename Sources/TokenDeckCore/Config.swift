@@ -23,6 +23,7 @@ public struct Config: Codable, Sendable, Equatable {
     /// Modulos do cartao, na ordem em que aparecem. Ver `ModuleKind`.
     public var modules: [String] = [
         ModuleKind.usage.rawValue,
+        ModuleKind.calendar.rawValue,
         ModuleKind.sessions.rawValue,
         ModuleKind.nowPlaying.rawValue,
         ModuleKind.clipboard.rawValue,
@@ -54,6 +55,10 @@ public struct Config: Codable, Sendable, Equatable {
         "me.proton.pass.electron",
     ]
 
+    /// Banco do Notion onde os links são salvos. Cole aqui o id que aparece na
+    /// URL da página do banco, com ou sem hifens.
+    public var notionDatabaseID: String = ""
+
     /// Aba aberta da última vez.
     public var selectedModule: String = ModuleKind.usage.rawValue
 
@@ -80,6 +85,7 @@ public struct Config: Codable, Sendable, Equatable {
         case claudeDailyTokenCeiling, claudeMonthlyTokenCeiling
         case refreshInterval, panelEnabled, notchScreenNumber, modules, alertThreshold
         case clipboardRetentionHours, clipboardMaxItems, clipboardIgnoredApps, selectedModule
+        case notionDatabaseID
         case shelfCapturesPastedImages
     }
 
@@ -96,6 +102,7 @@ public struct Config: Codable, Sendable, Equatable {
         panelEnabled = try c.decodeIfPresent(Bool.self, forKey: .panelEnabled) ?? fallback.panelEnabled
         modules = try c.decodeIfPresent([String].self, forKey: .modules) ?? fallback.modules
         selectedModule = try c.decodeIfPresent(String.self, forKey: .selectedModule) ?? fallback.selectedModule
+        notionDatabaseID = try c.decodeIfPresent(String.self, forKey: .notionDatabaseID) ?? fallback.notionDatabaseID
         alertThreshold = try c.decodeIfPresent(Double.self, forKey: .alertThreshold) ?? fallback.alertThreshold
         clipboardRetentionHours = try c.decodeIfPresent(Double.self, forKey: .clipboardRetentionHours) ?? fallback.clipboardRetentionHours
         clipboardMaxItems = try c.decodeIfPresent(Int.self, forKey: .clipboardMaxItems) ?? fallback.clipboardMaxItems

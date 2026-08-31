@@ -128,6 +128,28 @@ final class DashboardModel: ObservableObject {
         }
     }
 
+    /// Salva no Notion e devolve a mensagem de erro, ou nil em caso de sucesso.
+    func saveToNotion(_ texto: String) async -> String? {
+        let database = config.notionDatabaseID
+        let ehLink = texto.lowercased().hasPrefix("http")
+        do {
+            let item = try await NotionClient.shared.save(
+                title: texto,
+                url: ehLink ? texto : nil,
+                kind: ehLink ? NotionClient.classify(texto) : "Nota",
+                notes: nil,
+                database: database
+            )
+            NotionHistory.shared.record(item)
+            await refresh()
+            return nil
+        } catch let erro as NotionError {
+            return erro.description
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
     func copyBack(_ item: ClipboardItem) {
         builder.clipboard.copyBack(item)
     }

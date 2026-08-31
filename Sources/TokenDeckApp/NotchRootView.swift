@@ -38,7 +38,8 @@ struct NotchRootView: View {
                         onClipboardCopy: model.copyBack,
                         onClipboardRemove: model.removeFromClipboard,
                         onClipboardClear: model.clearClipboard,
-                        onMediaCommand: model.mediaCommand
+                        onMediaCommand: model.mediaCommand,
+                        onNotionSave: model.saveToNotion
                     ),
                     height: controller.cardHeight,
                     scrolls: controller.cardScrolls
@@ -123,6 +124,7 @@ struct NotchCardContent: View {
     let onClipboardRemove: (ClipboardItem) -> Void
     let onClipboardClear: () -> Void
     let onMediaCommand: (NowPlayingReader.Command) -> Void
+    let onNotionSave: (String) async -> String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -161,6 +163,14 @@ struct NotchCardContent: View {
             } else {
                 Placeholder(text: "Nada tocando no Spotify nem no app Música.")
             }
+        case .notion:
+            NotionBlock(
+                recent: snapshot.notionRecent,
+                ready: snapshot.notionReady,
+                onSave: onNotionSave
+            )
+        case .calendar:
+            CalendarBlock(events: snapshot.agenda, access: snapshot.agendaAccess)
         case .clipboard:
             ClipboardBlock(
                 items: snapshot.clipboard,
