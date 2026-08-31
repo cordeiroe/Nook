@@ -1,245 +1,104 @@
 # Nook
 
-Central de controle no notch do macOS. Consumo de IA, agenda, sessões em
-andamento, música, área de transferência e uma prateleira de arquivos, tudo
-num recanto da tela que você já não usava.
+Uma central de controle no notch do Mac.
 
-Em repouso, nada é desenhado: o próprio recorte da tela é o alvo do mouse. Ao
-passar o cursor, um cartão desce com abas, uma por módulo, e mostra um de cada
-vez. Quando um limite passa de 80%, um arco fino acende na borda inferior do
-notch.
+O recorte no topo da tela é espaço morto: ninguém coloca nada ali, e ele fica o
+dia inteiro ocupando pixels sem fazer nada. O Nook usa esse espaço para o que
+você checaria de qualquer jeito, várias vezes por dia, abrindo e fechando
+janelas.
 
-Em telas sem notch físico o recorte é desenhado, com os mesmos 220pt de largura
-e cantos inferiores arredondados. Sem isso o painel flutuaria solto no meio da
-barra de menus e perderia a ideia de sair de algum lugar.
+Em repouso ele não desenha nada. Passe o mouse sobre o recorte e um painel desce
+de dentro dele.
 
-## Requisitos
+Em monitor sem notch físico o recorte é desenhado, com a mesma largura do de um
+MacBook, e tudo funciona igual.
 
-- macOS 14 ou superior
-- Xcode 15 ou superior (usa apenas SwiftPM, sem projeto Xcode)
+## O que ele mostra
 
-## De onde vêm os dados
+O painel tem abas. Uma coisa por vez, escolhida por você.
 
-Tudo é lido localmente. O app não envia nada para lugar nenhum, com uma única
-exceção: a consulta de cota da MiniMax, que vai para a API deles.
+**Consumo.** Quanto sobrou do seu plano do Claude na janela de 5 horas, na
+semana e nos créditos, com os números oficiais da Anthropic, não estimativa. E
+a cota da MiniMax, se você usa. Mais consumo por dia e por mês como referência.
 
-| Dado | Origem |
-|---|---|
-| Limites do plano Claude (5h, semana, créditos) | JSON que o Claude Code entrega à statusline |
-| Consumo por janela e por projeto | `~/.claude/projects/*/*.jsonl` |
-| Sessões vivas do Claude Code | `~/.claude/sessions/<pid>.json` |
-| Sessões, custo e tokens do opencode | `~/.local/share/opencode/opencode.db` (somente leitura) |
-| Cota da MiniMax | `GET /v1/token_plan/remains` |
-| Tocando agora | AppleScript no Spotify e no app Música; capa vinda do CDN do Spotify |
-| Capturas recentes | pasta de capturas e imagens na área de transferência |
-| Área de transferência | `NSPasteboard`, consultada a cada 0,6s |
-| Agenda | EventKit, que enxerga iCloud, Google e Exchange do sistema |
-| Notion | `POST /v1/pages` na API do Notion |
+Quando um limite passa de 80%, um traço colorido acende na borda inferior do
+recorte. É o único momento em que o Nook aparece sem você pedir.
 
-## Instalação
+**Agenda.** O que vem a seguir nas próximas 36 horas, lendo o Calendário do
+sistema, então enxerga iCloud, Google e Exchange juntos. O que está acontecendo
+agora fica em destaque e continua visível até terminar. Clique numa linha para
+entrar na chamada, ou para abrir o compromisso no Calendário quando não houver
+link.
 
-### 1. Identidade de assinatura
+**Sessões.** Quais agentes de IA estão rodando, o que cada um está fazendo e há
+quanto tempo está ocupado ou parado. O título é o que a própria IA deu à
+conversa, não o nome da pasta. Clique numa sessão para trazer o terminal dela
+para frente.
 
-```bash
-./tools/make-signing-identity.sh
-```
+Cobre Claude Code e opencode ao mesmo tempo.
 
-Cria um certificado local autoassinado. Sem ele o app é assinado ad-hoc, e o
-requisito designado passa a ser o hash do binário, que muda a cada build: o
-macOS trata cada build como um app diferente e repete todos os pedidos de
-permissão. Com o certificado, o requisito vira o identificador do bundle mais o
-certificado, e as autorizações sobrevivem às atualizações.
+**Tocando.** Capa, faixa, álbum, barra de progresso e controles de anterior,
+pausa e próxima. Spotify e app Música.
 
-Não precisa de `sudo` nem de confiar no certificado, e não substitui uma conta
-Apple Developer, necessária apenas para distribuir a terceiros com notarização.
+**Transferência.** O que você copiou recentemente, com busca visual e um clique
+para colar de volta. Senhas e chaves de API são descartadas na entrada, e o
+resto expira sozinho em oito horas. Detalhes de como isso funciona estão na
+[documentação técnica](TECHNICAL.md#área-de-transferência).
 
-Rode uma vez só: recriar o certificado zera as permissões já concedidas.
+**Prateleira.** Capturas de tela recentes e arquivos que você largou ali,
+prontos para arrastar de volta para qualquer lugar. Serve para aquele arquivo
+que você precisa daqui a dois minutos e não quer decidir onde guardar.
 
-Na primeira assinatura o macOS pede autorização para o `codesign` usar a chave.
-Escolha **Sempre Permitir**: com "Permitir", ele volta a perguntar a cada build,
-e enquanto o diálogo estiver aberto qualquer `codesign` fica travado esperando.
+**Notion.** Cole um link, aperte enter, e ele vai para o seu banco no Notion já
+classificado como vídeo, tweet, repositório, fórum ou artigo, deduzido do
+endereço. Para quando você acha algo bom no meio do dia e não quer perder o
+fluxo salvando na mão.
 
-### 2. Ajustes de máquina
+## Como se comporta
 
-```bash
-cp .env.example .env
-```
+Nunca rouba o foco. Clicar no painel não tira o cursor de onde você estava
+digitando.
 
-O identificador do bundle entra no requisito designado. Escolha um e não mude
-depois da primeira instalação.
+Fecha sozinho quando o mouse sai, com um atraso curto para não piscar enquanto
+você percorre as abas.
 
-### 3. Build
+Os números que mais importam, os limites do plano e o estado das sessões,
+atualizam em cerca de 50 milissegundos. O resto acompanha um ciclo de 15
+segundos.
 
-```bash
-./make-app.sh && open dist/Nook.app
-```
+Escolha quais abas quer, e em que ordem, editando uma lista no arquivo de
+configuração.
 
-### 4. Limites reais do plano Claude
+## Onde os dados ficam
 
-```bash
-./tools/install-statusline.sh
-```
+Tudo é lido da sua própria máquina. As únicas coisas que saem dela são a
+consulta de cota à MiniMax e o download da capa do álbum, além do que você
+mesmo escolher mandar para o Notion.
 
-O Claude Code entrega um JSON à statusline a cada render, e nele vêm os
-percentuais reais das janelas de 5 horas, 7 dias e dos créditos. Esta é a única
-fonte oficial desses números para planos Pro e Max: a Admin API de usage cobre
-organizações de API, não contas do claude.ai.
+Nada é enviado para nenhum servidor do Nook, porque não existe servidor do Nook.
 
-O instalador preserva a statusline que já existia, que passa a ser chamada pela
-ponte, e guarda um backup do `settings.json`.
-
-Sem esse passo o app cai numa estimativa local calculada a partir dos `.jsonl`.
-Ela é grosseira e o cartão avisa quando está nesse modo. Não confie nela para
-decidir nada.
-
-### 5. Chave da MiniMax, se você usa
+## Instalação rápida
 
 ```bash
-printf %s "$SUA_CHAVE" | ./.build/debug/nookauth set minimax
+./tools/make-signing-identity.sh     # certificado local, uma vez só
+./make-app.sh && open dist/Nook.app  # compila e abre
+./tools/install-statusline.sh        # liga os números reais do plano Claude
 ```
 
-Lê de stdin para a chave não aparecer em `argv` nem no histórico do shell.
-Guarda em `credentials.json` com modo `0600`. Use `--keychain` para preferir o
-chaveiro.
+macOS 14 ou superior, Xcode 15 ou superior.
 
-## Sessões
+O passo do certificado evita que o macOS peça todas as permissões de novo a
+cada atualização. O da statusline é o que traz os limites oficiais do plano:
+sem ele o Nook cai numa estimativa que erra feio.
 
-Clicar numa sessão traz o terminal dela para frente.
+Chaves da MiniMax e do Notion são opcionais e ficam guardadas fora do
+repositório. O passo a passo está na
+[documentação técnica](TECHNICAL.md#instalação).
 
-O processo do agente não é um aplicativo: ele é filho de um shell, que é filho
-do terminal. O app sobe a árvore de processos até achar algo que o sistema
-reconheça como aplicativo, e ativa.
+## Por dentro
 
-Selecionar a aba certa depende do terminal. Terminal e iTerm2 expõem o TTY de
-cada aba por AppleScript, e nesses o app acerta a aba. Warp, Ghostty e a
-maioria dos outros não expõem, e ali o melhor possível é trazer a janela à
-frente.
-
-Sessão do opencode não tem processo associado, então o clique abre a pasta de
-trabalho no Finder.
-
-## Notion
-
-Para salvar links no Notion:
-
-1. Crie uma integração interna em <https://www.notion.so/my-integrations>
-2. Compartilhe o banco de dados com ela, pelo menu de três pontos da página
-3. Guarde o token e aponte o banco:
-
-```bash
-printf %s "$TOKEN" | ./.build/debug/nookauth set notion
-```
-
-```jsonc
-{ "notionDatabaseID": "id que aparece na URL do banco" }
-```
-
-O nome das propriedades muda de banco para banco, então o cliente lê o esquema
-e descobre onde cada coisa vai: a propriedade do tipo `title` recebe o texto, a
-primeira `url` recebe o link, e assim por diante. Um banco montado à mão
-funciona sem renomear nada. As colunas úteis são título, URL, um `select` para
-o tipo, um `rich_text` para notas e uma data.
-
-O tipo é deduzido do domínio: YouTube e Vimeo viram Vídeo; X e Bluesky, Tweet;
-GitHub e GitLab, Repositório; Hacker News e Reddit, Fórum; o resto, Artigo.
-Texto sem link vira Nota.
-
-## Configuração
-
-`~/Library/Application Support/Nook/config.json`
-
-```jsonc
-{
-  "modules": ["usage", "calendar", "sessions", "nowPlaying", "clipboard", "shelf", "notion"],
-  "selectedModule": "usage",         // aba aberta
-  "alertThreshold": 0.80,          // quando o arco do notch acende
-  "openCodeMonthlyBudgetUSD": 50,  // denominador do gasto MiniMax
-  "refreshInterval": 15,           // ciclo de fundo, em segundos
-  "clipboardRetentionHours": 8,    // idade máxima de um item copiado
-  "clipboardMaxItems": 40,
-  "clipboardIgnoredApps": ["com.1password.1password", "..."]
-}
-```
-
-Campos ausentes voltam ao padrão sem invalidar o resto do arquivo.
-
-## Ferramentas
-
-| Comando | Para quê |
-|---|---|
-| `./.build/debug/nookprobe` | Imprime tudo que o painel mostraria, em texto |
-| `./.build/debug/nookauth status` | Onde cada credencial está guardada |
-| `./tools/install-statusline.sh` | Instala a ponte da statusline |
-
-## Área de transferência
-
-Guardar tudo que você copia é guardar senhas e tokens por acidente. A defesa
-tem quatro camadas, porque nenhuma sozinha basta:
-
-1. **Marcadores do sistema.** Gerenciadores de senha anunciam "não guarde isto"
-   pelos tipos `org.nspasteboard.ConcealedType`, `TransientType` e
-   `AutoGeneratedType`. Cobre o caso bem-comportado.
-2. **Aplicativo de origem.** Cópias vindas de um gerenciador conhecido são
-   ignoradas mesmo sem marcador, porque nem todos marcam. A lista está em
-   `clipboardIgnoredApps`.
-3. **Formato do conteúdo.** Chaves da OpenAI, Anthropic, MiniMax, GitHub,
-   GitLab, Slack, AWS e Google, além de JWT e blocos de chave privada, têm
-   prefixos reconhecíveis. Cobre o segredo copiado de um editor de texto.
-4. **Prazo de validade.** O que escapar das três anteriores desaparece sozinho
-   em `clipboardRetentionHours`, oito horas por padrão.
-
-O que resta em risco é o segredo sem marcador, vindo de um app desconhecido e
-sem formato reconhecível. Por isso o prazo é curto e existe o botão de limpar.
-
-Só texto é guardado, no máximo 20 KB por item, em `clipboard.json` com modo
-`0600`.
-
-## Privacidade
-
-Nada é versionado nem transmitido, fora duas requisições de saída: a consulta
-de cota à MiniMax e o download da capa do álbum no CDN do Spotify.
-
-- `credentials.json`, `claude-limits.json` e `clipboard.json` são gravados com
-  modo `0600`
-- A prateleira guarda caminhos, nunca cópias dos seus arquivos
-- O banco do opencode é aberto somente para leitura, e a conexão nunca é
-  mantida aberta entre consultas, para não atrapalhar o checkpoint do WAL dele
-- `.env` está no `.gitignore`
-
-## Limitações conhecidas
-
-- Os limites reais só chegam enquanto o Claude Code está aberto, porque é ele
-  que executa a statusline. Sem sessão o dado envelhece, e o cartão mostra há
-  quanto tempo foi capturado.
-- As janelas de Dia e Mês são referência, não cota: o teto é escolhido por
-  você. Elas aparecem com barra apagada, sem cor de limite.
-- A agenda usa EventKit, então só enxerga contas configuradas em Ajustes do
-  Sistema > Contas de Internet. Calendário aberto apenas no navegador não
-  aparece.
-- A capa do álbum vem de `artwork url`, que só o Spotify expõe. No app Música
-  o bloco aparece sem capa.
-- `spend_limit` nem sempre vem no payload. Quando vier, o medidor de créditos
-  aparece sozinho.
-- A pasta de capturas costuma ser protegida por TCC. O bloco da prateleira tem
-  um atalho para o painel de autorização.
-- Com Cmd+Shift+5, o macOS segura o arquivo numa pasta temporária enquanto a
-  miniatura flutuante está na tela, e só o move para o destino quando ela
-  expira. Quem arrasta ou cola a miniatura antes disso consome o arquivo de lá,
-  e nada chega à pasta de capturas. Por isso a prateleira também guarda imagens
-  que passam pela área de transferência: é o que pega esse fluxo. Essas são a
-  única exceção à regra de guardar caminhos, porque não existe original para
-  apontar. Desligue em `shelfCapturesPastedImages`.
-
-## Estrutura
-
-```
-Sources/NookCore/   leitura de dados, sem UI
-Sources/NookApp/    painel do notch e barra de menus
-Sources/nookprobe/         diagnóstico em linha de comando
-Sources/nookauth/          gerência de credenciais
-tools/                   assinatura e ponte da statusline
-attic/                   régua de borda, substituída pelo modo notch
-```
+Fontes de dados, permissões do macOS, decisões de arquitetura e as armadilhas
+já pagas estão em [TECHNICAL.md](TECHNICAL.md).
 
 ## Licença
 
