@@ -9,3 +9,7 @@ dist/
 
 # macOS
 .DS_Store
+
+# Documento de trabalho: estado do projeto, pendências e próximos passos.
+# Fica fora do versionamento de propósito.
+ESTADO.md
