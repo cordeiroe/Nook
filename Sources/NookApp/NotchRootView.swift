@@ -79,13 +79,14 @@ struct NotchRootView: View {
             notchShape
                 .fill(controller.isOpen || isVirtual ? Color.black : Color.clear)
 
-            if !controller.isOpen {
-                if isVirtual {
-                    // Num recorte virtual há pixels para desenhar a marca, e o
-                    // sorriso dela é o próprio traço de alerta.
-                    BrandMark(notchHeight: notchSize.height, alert: alert)
-                        .transition(.opacity)
-                } else if let alert {
+            if isVirtual {
+                // Num recorte virtual há pixels para desenhar a marca, e o
+                // sorriso dela é o próprio traço de alerta. Fica visível também
+                // com o painel aberto: some justamente quando o app está em uso
+                // seria o pior momento para a identidade desaparecer.
+                BrandMark(notchHeight: notchSize.height, alert: alert)
+            } else {
+                if let alert, !controller.isOpen {
                     // Num notch físico não há onde desenhar dentro do recorte,
                     // então o aviso é só o traço, colado na borda de baixo.
                     VStack {

@@ -250,6 +250,10 @@ largura e espessura do traço de alerta, e por isso ele **é** o traço: passand
 de 80%, o sorriso acende em laranja em vez de aparecer um elemento novo. Laranja
 não é usado em mais nada, para não perder o significado de aviso.
 
+Fica visível também com o painel aberto, ocupando o pescoço acima do cartão.
+Esconder a marca justamente quando o app está em uso seria o pior momento para
+a identidade sumir.
+
 Só aparece no recorte virtual. Num MacBook o recorte é a câmera e não existem
 pixels ali para desenhar.
 
