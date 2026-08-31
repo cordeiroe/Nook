@@ -2,33 +2,33 @@
 import PackageDescription
 
 let package = Package(
-    name: "TokenDeck",
+    name: "Nook",
     platforms: [.macOS(.v14)],
     products: [
-        .library(name: "TokenDeckCore", targets: ["TokenDeckCore"]),
-        .executable(name: "tdprobe", targets: ["tdprobe"]),
-        .executable(name: "tdauth", targets: ["tdauth"]),
-        .executable(name: "TokenDeckApp", targets: ["TokenDeckApp"]),
+        .library(name: "NookCore", targets: ["NookCore"]),
+        .executable(name: "nookprobe", targets: ["nookprobe"]),
+        .executable(name: "nookauth", targets: ["nookauth"]),
+        .executable(name: "NookApp", targets: ["NookApp"]),
     ],
     targets: [
         .target(
-            name: "TokenDeckCore",
+            name: "NookCore",
             swiftSettings: [.swiftLanguageMode(.v5)],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),
         .executableTarget(
-            name: "TokenDeckApp",
-            dependencies: ["TokenDeckCore"],
+            name: "NookApp",
+            dependencies: ["NookCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
-            name: "tdauth",
-            dependencies: ["TokenDeckCore"],
+            name: "nookauth",
+            dependencies: ["NookCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
-            name: "tdprobe",
-            dependencies: ["TokenDeckCore"],
+            name: "nookprobe",
+            dependencies: ["NookCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

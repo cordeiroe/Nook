@@ -12,8 +12,9 @@ struct NotchGeometry: Equatable {
     let notchRect: CGRect
     let isPhysical: Bool
 
-    /// Largura do notch virtual quando a tela nao tem um de verdade.
-    private static let virtualWidth: CGFloat = 200
+    /// Largura do notch virtual quando a tela nao tem um de verdade. Igual à
+    /// do recorte de um MacBook, para o produto parecer o mesmo nas duas telas.
+    private static let virtualWidth: CGFloat = 220
     private static let minimumBarHeight: CGFloat = 24
 
     static func detect(preferring screenNumber: Int?) -> NotchGeometry? {
@@ -25,10 +26,20 @@ struct NotchGeometry: Equatable {
             chosen = match
         } else if let notched = candidates.first(where: { $0.auxiliaryTopLeftArea != nil }) {
             chosen = notched
+        } else if let comBarra = candidates.first(where: { hasMenuBar($0) }) {
+            // Sem recorte físico, a tela com barra de menus é a principal, e é
+            // ali que o painel faz sentido. `NSScreen.main` seria a tela com
+            // foco de teclado no instante do lançamento, o que jogava o painel
+            // num monitor secundário sem barra nenhuma.
+            chosen = comBarra
         } else {
             chosen = NSScreen.main ?? candidates[0]
         }
         return make(for: chosen)
+    }
+
+    private static func hasMenuBar(_ screen: NSScreen) -> Bool {
+        screen.frame.maxY - screen.visibleFrame.maxY >= minimumBarHeight
     }
 
     private static func make(for screen: NSScreen) -> NotchGeometry? {

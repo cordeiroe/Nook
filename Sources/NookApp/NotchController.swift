@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Painel sem borda que nao rouba foco. Sem isso, tocar no painel tiraria
 /// o cursor do editor onde o usuario esta trabalhando.

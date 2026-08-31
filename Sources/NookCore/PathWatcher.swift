@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Observa o diretorio, nunca o arquivo: escrita atomica troca o inode, e um
 /// descritor aberto no arquivo antigo para de receber eventos para sempre.
-/// Como o TokenDeck tambem escreve na propria pasta de suporte, o alvo
+/// Como o Nook tambem escreve na propria pasta de suporte, o alvo
 /// opcional filtra por mtime e evita realimentacao.
 public final class PathWatcher: @unchecked Sendable {
     private let directory: URL

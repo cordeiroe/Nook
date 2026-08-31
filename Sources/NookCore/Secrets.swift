@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Segredos do TokenDeck.
+/// Segredos do Nook.
 ///
 /// Duas fontes, nesta ordem:
 ///
@@ -14,14 +14,14 @@ import Security
 /// O arquivo fica legivel por qualquer processo rodando como o usuario. Numa
 /// maquina pessoal com FileVault isso e o mesmo nivel de protecao que
 /// `~/.aws/credentials` ou o `auth.json` do proprio opencode. Se preferir o
-/// Keychain, use `tdauth set <slot> --keychain`.
+/// Keychain, use `nookauth set <slot> --keychain`.
 public enum Secrets {
     public enum Slot: String, CaseIterable, Sendable, Codable {
-        case minimax = "TokenDeck-minimax"
-        case notion = "TokenDeck-notion"
+        case minimax = "Nook-minimax"
+        case notion = "Nook-notion"
 
         public var short: String {
-            rawValue.replacingOccurrences(of: "TokenDeck-", with: "")
+            rawValue.replacingOccurrences(of: "Nook-", with: "")
         }
 
         public var label: String {
@@ -36,7 +36,7 @@ public enum Secrets {
         case file, keychain
     }
 
-    private static let account = "tokendeck"
+    private static let account = "nook"
     private static let lock = NSLock()
     private static var cache: [Slot: String] = [:]
 

@@ -1,5 +1,5 @@
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Painel do menu bar. Mostra tudo de uma vez, sem hover: e o lugar pra
 /// conferir os numeros com calma, enquanto a regua e a vigia de canto de olho.
@@ -25,7 +25,7 @@ struct PanelView: View {
         HStack(spacing: 8) {
             Image(systemName: "gauge.with.dots.needle.33percent")
                 .foregroundStyle(.tint)
-            Text("TokenDeck")
+            Text("Nook")
                 .font(.system(size: 13, weight: .semibold))
             Spacer()
             if model.isRefreshing {

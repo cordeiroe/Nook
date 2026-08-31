@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 import UniformTypeIdentifiers
 
 /// Conteudo do painel do notch. Em repouso e uma area invisivel do tamanho
@@ -20,6 +20,17 @@ struct NotchRootView: View {
               ratio >= model.config.alertThreshold
         else { return nil }
         return ratio
+    }
+
+    /// Cantos inferiores arredondados imitam o recorte do MacBook. Aberto, os
+    /// cantos somem: o pescoço passa a ser continuação do cartão.
+    private var notchShape: UnevenRoundedRectangle {
+        let raio: CGFloat = (isVirtual && !controller.isOpen) ? 12 : 0
+        return UnevenRoundedRectangle(
+            topLeadingRadius: 0, bottomLeadingRadius: raio,
+            bottomTrailingRadius: raio, topTrailingRadius: 0,
+            style: .continuous
+        )
     }
 
     var body: some View {
@@ -53,13 +64,20 @@ struct NotchRootView: View {
         .onHover { controller.setPointerInside($0) }
     }
 
-    /// Pescoco que liga o recorte ao cartao. Preto sobre preto quando o notch e
-    /// fisico, entao a juncao some. Fechado fica transparente mas clicavel, que
-    /// e o que faz o proprio notch ser o alvo do hover.
+    /// Numa tela sem recorte, ele é desenhado: sem isso o painel flutua solto
+    /// no meio da barra de menus e perde a ideia de sair de algum lugar.
+    private var isVirtual: Bool {
+        controller.geometry.map { !$0.isPhysical } ?? false
+    }
+
+    /// Pescoco que liga o recorte ao cartao. Sobre um notch físico ele é preto
+    /// sobre preto e a junção some; sobre um virtual, ele É o notch. Fechado e
+    /// físico, fica transparente mas clicável, e é isso que faz o próprio
+    /// recorte da tela ser o alvo do hover.
     private var neck: some View {
         ZStack(alignment: .bottom) {
-            Rectangle()
-                .fill(controller.isOpen ? Color.black : Color.clear)
+            notchShape
+                .fill(controller.isOpen || isVirtual ? Color.black : Color.clear)
 
             if !controller.isOpen, let alert {
                 Capsule()
@@ -73,6 +91,7 @@ struct NotchRootView: View {
         .frame(width: notchSize.width, height: notchSize.height)
         .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.25), value: alert != nil)
+        .animation(.easeOut(duration: 0.18), value: controller.isOpen)
         // Arrastar um arquivo sobre o notch abre o painel. Sem isto nao haveria
         // como largar nada na prateleira, porque em repouso ela nem existe.
         .onDrop(of: [.fileURL], isTargeted: nil) { _ in false }
@@ -240,7 +259,7 @@ struct SettingsMenu: View {
                 Button("Trocar de tela") { AppDelegate.current?.notch?.cycleScreen() }
             }
             Divider()
-            Button("Sair do TokenDeck") { NSApplication.shared.terminate(nil) }
+            Button("Sair do Nook") { NSApplication.shared.terminate(nil) }
         } label: {
             Image(systemName: "gearshape.fill")
                 .font(.system(size: 11))

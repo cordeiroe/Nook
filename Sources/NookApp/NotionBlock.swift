@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Captura rápida para o Notion. Cole um link, aperte enter, acabou.
 struct NotionBlock: View {

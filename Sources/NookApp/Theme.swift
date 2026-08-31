@@ -1,5 +1,5 @@
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 enum Theme {
     static let panelWidth: CGFloat = 340

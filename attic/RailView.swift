@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Conteudo do painel da regua. A bolha vive em painel proprio, entao aqui
 /// so existe a barra de aneis, o hover e o arrasto.
@@ -101,7 +101,7 @@ struct RailRootView: View {
         Button("Recentralizar") { controller.resetPosition() }
         Button("Ocultar régua") { controller.toggle() }
         Divider()
-        Button("Sair do TokenDeck") { NSApplication.shared.terminate(nil) }
+        Button("Sair do Nook") { NSApplication.shared.terminate(nil) }
     }
 }
 

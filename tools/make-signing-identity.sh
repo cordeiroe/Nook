@@ -19,7 +19,7 @@
 # concedidas. Rode isto uma vez so.
 set -euo pipefail
 
-NAME="${1:-TokenDeck Dev}"
+NAME="${1:-Nook Dev}"
 
 if security find-identity | grep -q "\"$NAME\""; then
     echo "identidade \"$NAME\" já existe"

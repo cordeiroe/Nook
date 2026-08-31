@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ponte entre a statusline do Claude Code e o TokenDeck.
+# Ponte entre a statusline do Claude Code e o Nook.
 #
 # O Claude Code manda um JSON na stdin da statusline a cada render, e nele vem
 # `rate_limits`, com o percentual REAL das janelas de 5h, 7d e dos créditos.
@@ -12,18 +12,18 @@
 #
 # Instalação em ~/.claude/settings.json:
 #   "statusLine": { "type": "command",
-#                   "command": "bash \"<caminho>/tokendeck-statusline.sh\"" }
+#                   "command": "bash \"<caminho>/nook-statusline.sh\"" }
 
-OUT="$HOME/Library/Application Support/TokenDeck/claude-limits.json"
+OUT="$HOME/Library/Application Support/Nook/claude-limits.json"
 
 # Statusline original, executada depois da captura. Vazio = não repassa nada.
 # O install-statusline.sh preenche esta variável com o que já estava
 # configurado, para nenhuma statusline existente parar de funcionar.
-ORIGINAL="${TOKENDECK_INNER_STATUSLINE:-}"
+ORIGINAL="${NOOK_INNER_STATUSLINE:-}"
 
 INPUT=$(cat)
 
-# Escrita atômica: a statusline roda a cada tecla e o TokenDeck lê a qualquer
+# Escrita atômica: a statusline roda a cada tecla e o Nook lê a qualquer
 # momento. Sem o mv, ele leria JSON pela metade.
 if [ -n "$INPUT" ]; then
     DIR=$(dirname "$OUT")

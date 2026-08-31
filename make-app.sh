@@ -1,11 +1,11 @@
 #!/bin/bash
-# Monta TokenDeck.app a partir do executavel do SwiftPM.
+# Monta Nook.app a partir do executavel do SwiftPM.
 # Sem Xcode project por enquanto: da pra fazer tudo pelo terminal ate o widget entrar.
 set -euo pipefail
 
 CONFIG="${1:-release}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP="$ROOT/dist/TokenDeck.app"
+APP="$ROOT/dist/Nook.app"
 
 # Ajustes de máquina ficam fora do versionamento. Copie .env.example para .env
 # e edite lá; o repositório não carrega identificador nem identidade de ninguém.
@@ -14,25 +14,25 @@ APP="$ROOT/dist/TokenDeck.app"
 # O identificador entra no requisito designado da assinatura, junto do
 # certificado. Trocá-lo faz o macOS tratar o app como novo e pedir todas as
 # permissões de novo, então mantenha-o estável depois da primeira instalação.
-BUNDLE_ID="${TOKENDECK_BUNDLE_ID:-app.tokendeck.widget}"
-IDENTITY="${TOKENDECK_SIGN_IDENTITY:-TokenDeck Dev}"
+BUNDLE_ID="${NOOK_BUNDLE_ID:-app.nook.widget}"
+IDENTITY="${NOOK_SIGN_IDENTITY:-Nook Dev}"
 
-swift build -c "$CONFIG" --product TokenDeckApp
-BIN="$(swift build -c "$CONFIG" --product TokenDeckApp --show-bin-path)/TokenDeckApp"
+swift build -c "$CONFIG" --product NookApp
+BIN="$(swift build -c "$CONFIG" --product NookApp --show-bin-path)/NookApp"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/TokenDeck"
+cp "$BIN" "$APP/Contents/MacOS/Nook"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleExecutable</key><string>TokenDeck</string>
+    <key>CFBundleExecutable</key><string>Nook</string>
     <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
-    <key>CFBundleName</key><string>TokenDeck</string>
-    <key>CFBundleDisplayName</key><string>TokenDeck</string>
+    <key>CFBundleName</key><string>Nook</string>
+    <key>CFBundleDisplayName</key><string>Nook</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleVersion</key><string>1</string>

@@ -121,7 +121,7 @@ public struct Config: Codable, Sendable, Equatable {
             return try JSONDecoder().decode(Config.self, from: data)
         } catch {
             // Config corrompido nao pode derrubar o app: cai no padrao e segue.
-            FileHandle.standardError.write(Data("TokenDeck: config.json invalido (\(error)), usando padroes\n".utf8))
+            FileHandle.standardError.write(Data("Nook: config.json invalido (\(error)), usando padroes\n".utf8))
             return Config()
         }
     }

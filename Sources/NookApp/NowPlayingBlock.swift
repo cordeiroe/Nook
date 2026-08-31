@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Capa do álbum. O Spotify entrega uma URL do CDN dele, então a imagem é
 /// baixada uma vez por faixa e fica em memória: sem cache, cada atualização

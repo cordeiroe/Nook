@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Próximos compromissos. O que está acontecendo agora ou começa em breve
 /// ganha destaque, porque é o único que exige ação imediata.

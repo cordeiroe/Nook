@@ -7,4 +7,4 @@ horizontal no topo e na base, e a bolha por provider em painel separado.
 Foram substituídos pelo modo notch em 2026-08-29, a pedido do usuário.
 
 Ficam fora de `Sources/` porque o SwiftPM compila tudo que está lá dentro.
-Para reativar, mover de volta para `Sources/TokenDeckApp/`.
+Para reativar, mover de volta para `Sources/NookApp/`.

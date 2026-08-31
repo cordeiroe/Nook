@@ -19,7 +19,7 @@ public struct ClaudeLimitWindow: Sendable, Equatable {
 /// API de usage cobre organizacoes de API, nao contas do claude.ai, e nao
 /// existe endpoint publico para o consumo de um plano individual.
 ///
-/// Depende do script `tools/tokendeck-statusline.sh` estar instalado como
+/// Depende do script `tools/nook-statusline.sh` estar instalado como
 /// statusline. Sem nenhuma sessao do Claude Code aberta o arquivo envelhece,
 /// entao `capturedAt` precisa aparecer na interface.
 public struct ClaudeLimits: Sendable, Equatable {

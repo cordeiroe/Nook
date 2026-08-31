@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 @MainActor
 final class DashboardModel: ObservableObject {

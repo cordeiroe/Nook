@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 /// Histórico da área de transferência. Clicar num item devolve o conteúdo
 /// para a área de transferência.

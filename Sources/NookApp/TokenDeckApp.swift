@@ -1,8 +1,8 @@
 import SwiftUI
-import TokenDeckCore
+import NookCore
 
 @main
-struct TokenDeckApp: App {
+struct NookApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = DashboardModel.shared
 

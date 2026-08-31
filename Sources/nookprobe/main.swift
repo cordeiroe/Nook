@@ -1,5 +1,5 @@
 import Foundation
-import TokenDeckCore
+import NookCore
 
 func pad(_ s: String, _ n: Int) -> String {
     s.count >= n ? String(s.prefix(n)) : s.padding(toLength: n, withPad: " ", startingAt: 0)

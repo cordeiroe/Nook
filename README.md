@@ -1,15 +1,17 @@
-# TokenDeck
+# Nook
 
-Painel no notch do macOS para acompanhar consumo de IA e sessões em andamento,
-sem precisar abrir nada.
+Central de controle no notch do macOS. Consumo de IA, agenda, sessões em
+andamento, música, área de transferência e uma prateleira de arquivos, tudo
+num recanto da tela que você já não usava.
 
 Em repouso, nada é desenhado: o próprio recorte da tela é o alvo do mouse. Ao
 passar o cursor, um cartão desce com abas, uma por módulo, e mostra um de cada
 vez. Quando um limite passa de 80%, um arco fino acende na borda inferior do
 notch.
 
-Em telas sem notch físico, o painel usa um recorte virtual no centro do topo e
-se comporta igual.
+Em telas sem notch físico o recorte é desenhado, com os mesmos 220pt de largura
+e cantos inferiores arredondados. Sem isso o painel flutuaria solto no meio da
+barra de menus e perderia a ideia de sair de algum lugar.
 
 ## Requisitos
 
@@ -69,7 +71,7 @@ depois da primeira instalação.
 ### 3. Build
 
 ```bash
-./make-app.sh && open dist/TokenDeck.app
+./make-app.sh && open dist/Nook.app
 ```
 
 ### 4. Limites reais do plano Claude
@@ -93,7 +95,7 @@ decidir nada.
 ### 5. Chave da MiniMax, se você usa
 
 ```bash
-printf %s "$SUA_CHAVE" | ./.build/debug/tdauth set minimax
+printf %s "$SUA_CHAVE" | ./.build/debug/nookauth set minimax
 ```
 
 Lê de stdin para a chave não aparecer em `argv` nem no histórico do shell.
@@ -125,7 +127,7 @@ Para salvar links no Notion:
 3. Guarde o token e aponte o banco:
 
 ```bash
-printf %s "$TOKEN" | ./.build/debug/tdauth set notion
+printf %s "$TOKEN" | ./.build/debug/nookauth set notion
 ```
 
 ```jsonc
@@ -144,7 +146,7 @@ Texto sem link vira Nota.
 
 ## Configuração
 
-`~/Library/Application Support/TokenDeck/config.json`
+`~/Library/Application Support/Nook/config.json`
 
 ```jsonc
 {
@@ -165,8 +167,8 @@ Campos ausentes voltam ao padrão sem invalidar o resto do arquivo.
 
 | Comando | Para quê |
 |---|---|
-| `./.build/debug/tdprobe` | Imprime tudo que o painel mostraria, em texto |
-| `./.build/debug/tdauth status` | Onde cada credencial está guardada |
+| `./.build/debug/nookprobe` | Imprime tudo que o painel mostraria, em texto |
+| `./.build/debug/nookauth status` | Onde cada credencial está guardada |
 | `./tools/install-statusline.sh` | Instala a ponte da statusline |
 
 ## Área de transferência
@@ -231,10 +233,10 @@ de cota à MiniMax e o download da capa do álbum no CDN do Spotify.
 ## Estrutura
 
 ```
-Sources/TokenDeckCore/   leitura de dados, sem UI
-Sources/TokenDeckApp/    painel do notch e barra de menus
-Sources/tdprobe/         diagnóstico em linha de comando
-Sources/tdauth/          gerência de credenciais
+Sources/NookCore/   leitura de dados, sem UI
+Sources/NookApp/    painel do notch e barra de menus
+Sources/nookprobe/         diagnóstico em linha de comando
+Sources/nookauth/          gerência de credenciais
 tools/                   assinatura e ponte da statusline
 attic/                   régua de borda, substituída pelo modo notch
 ```

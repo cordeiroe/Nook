@@ -1,23 +1,23 @@
 import Foundation
-import TokenDeckCore
+import NookCore
 
 // Gerencia credenciais lendo de stdin, pra chave nunca aparecer em argv nem no
 // historico do shell.
 //
-//   printf %s "$KEY" | tdauth set minimax              # arquivo 0600 (padrao)
-//   printf %s "$KEY" | tdauth set minimax --keychain   # Keychain
-//   tdauth status
-//   tdauth migrate minimax                             # Keychain -> arquivo
-//   tdauth delete minimax
+//   printf %s "$KEY" | nookauth set minimax              # arquivo 0600 (padrao)
+//   printf %s "$KEY" | nookauth set minimax --keychain   # Keychain
+//   nookauth status
+//   nookauth migrate minimax                             # Keychain -> arquivo
+//   nookauth delete minimax
 
 func usage() -> Never {
     let slots = Secrets.Slot.allCases.map(\.short).joined(separator: ", ")
     FileHandle.standardError.write(Data("""
     uso:
-      printf %s "$KEY" | tdauth set <slot> [--keychain]
-      tdauth status
-      tdauth migrate <slot>     move do Keychain pro arquivo (sem mais prompts)
-      tdauth delete <slot> [--keychain|--file]
+      printf %s "$KEY" | nookauth set <slot> [--keychain]
+      nookauth status
+      nookauth migrate <slot>     move do Keychain pro arquivo (sem mais prompts)
+      nookauth delete <slot> [--keychain|--file]
 
     slots: \(slots)
 
@@ -26,7 +26,7 @@ func usage() -> Never {
 }
 
 func slot(_ name: String) -> Secrets.Slot {
-    guard let s = Secrets.Slot(rawValue: "TokenDeck-\(name)") else {
+    guard let s = Secrets.Slot(rawValue: "Nook-\(name)") else {
         FileHandle.standardError.write(Data("slot desconhecido: \(name)\n".utf8))
         exit(2)
     }

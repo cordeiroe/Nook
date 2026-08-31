@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-import TokenDeckCore
+import NookCore
 import UniformTypeIdentifiers
 
 /// Prateleira: capturas recentes e arquivos largados, prontos pra arrastar.
