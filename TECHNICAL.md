@@ -253,6 +253,13 @@ não é usado em mais nada, para não perder o significado de aviso.
 Só aparece no recorte virtual. Num MacBook o recorte é a câmera e não existem
 pixels ali para desenhar.
 
+O arco não é uma parábola. O CSS do desenho pede `border-radius: 0 0 26px 26px`
+numa caixa de 26x8, e o navegador encolhe raios que não cabem: o raio real vira
+8, e o traço fica reto no meio com as pontas viradas para cima. Desenhar uma
+parábola no lugar produzia um U que abraçava a palavra inteira. Na largura do
+desenho as pontas ainda subiam dentro do `n` e do `k`, então o arco foi
+estreitado para caber sob o `oo`, que é o que o desenho descreve em texto.
+
 A fonte é Bricolage Grotesque SemiBold, empacotada em `Resources/` sob a SIL
 Open Font License e registrada em tempo de execução com
 `CTFontManagerRegisterFontsForURL`. Ela não vai como recurso do SwiftPM porque

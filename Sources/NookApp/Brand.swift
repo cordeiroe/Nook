@@ -37,15 +37,28 @@ enum Brand {
     }
 }
 
-/// O sorriso. Vem do `border-radius: 0 0 R R` com só a borda inferior: a metade
-/// de baixo de uma elipse.
+/// O sorriso: a borda inferior de uma caixa com os cantos de baixo
+/// arredondados.
+///
+/// Não é uma parábola. O CSS do desenho pede `border-radius: 0 0 26px 26px`
+/// numa caixa de 26x8, e o navegador encolhe raios que não cabem: o raio real
+/// vira 8. O traço fica reto no meio com as pontas viradas para cima, e é isso
+/// que faz o sorriso caber sob o `oo` em vez de abraçar a palavra inteira.
 struct Smile: Shape {
     func path(in rect: CGRect) -> Path {
+        let raio = min(rect.height, rect.width / 2)
         var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY),
-            control: CGPoint(x: rect.midX, y: rect.minY + rect.height * 2)
+        p.move(to: CGPoint(x: rect.minX, y: rect.maxY - raio))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.minX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.midX, y: rect.maxY),
+            radius: raio
+        )
+        p.addLine(to: CGPoint(x: rect.maxX - raio, y: rect.maxY))
+        p.addArc(
+            tangent1End: CGPoint(x: rect.maxX, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.minY),
+            radius: raio
         )
         return p
     }
@@ -61,8 +74,11 @@ struct BrandMark: View {
     let alert: Double?
 
     private var size: CGFloat { min(13, max(9, notchHeight * 0.44)) }
-    private var smileWidth: CGFloat { size * 2 }
-    private var smileDepth: CGFloat { size * 0.6 }
+    /// Proporções medidas para o arco ficar sob o `oo`. Na largura do desenho
+    /// as pontas subiam dentro do `n` e do `k`.
+    private var smileWidth: CGFloat { size * 1.38 }
+    private var smileDepth: CGFloat { size * 0.38 }
+    private var smileLift: CGFloat { size * 0.23 }
     private var stroke: CGFloat { alert == nil ? 1.5 : 2 }
 
     private var color: Color {
@@ -81,7 +97,7 @@ struct BrandMark: View {
             Smile()
                 .stroke(color, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
                 .frame(width: smileWidth, height: smileDepth)
-                .offset(y: -smileDepth * 0.55)
+                .offset(y: -smileLift)
                 .animation(.easeInOut(duration: 0.3), value: alert != nil)
         }
     }
