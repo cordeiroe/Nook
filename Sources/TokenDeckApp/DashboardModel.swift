@@ -150,6 +150,14 @@ final class DashboardModel: ObservableObject {
         }
     }
 
+    /// Traz o terminal da sessão para frente. Fora da main thread porque sobe a
+    /// árvore de processos e pode chamar AppleScript.
+    func focusSession(_ session: LiveSession) {
+        Task.detached(priority: .userInitiated) {
+            SessionFocus.focus(session)
+        }
+    }
+
     func copyBack(_ item: ClipboardItem) {
         builder.clipboard.copyBack(item)
     }

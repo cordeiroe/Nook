@@ -39,7 +39,8 @@ struct NotchRootView: View {
                         onClipboardRemove: model.removeFromClipboard,
                         onClipboardClear: model.clearClipboard,
                         onMediaCommand: model.mediaCommand,
-                        onNotionSave: model.saveToNotion
+                        onNotionSave: model.saveToNotion,
+                        onFocusSession: model.focusSession
                     ),
                     height: controller.cardHeight,
                     scrolls: controller.cardScrolls
@@ -125,6 +126,7 @@ struct NotchCardContent: View {
     let onClipboardClear: () -> Void
     let onMediaCommand: (NowPlayingReader.Command) -> Void
     let onNotionSave: (String) async -> String?
+    let onFocusSession: (LiveSession) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -155,7 +157,7 @@ struct NotchCardContent: View {
             if snapshot.sessions.isEmpty {
                 Placeholder(text: "Nenhuma sessão rodando.")
             } else {
-                SessionsBlock(sessions: snapshot.sessions)
+                SessionsBlock(sessions: snapshot.sessions, onFocus: onFocusSession)
             }
         case .nowPlaying:
             if let playing = snapshot.nowPlaying {
@@ -293,6 +295,7 @@ struct ProviderBlock: View {
 
 struct SessionsBlock: View {
     let sessions: [LiveSession]
+    let onFocus: (LiveSession) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -311,24 +314,8 @@ struct SessionsBlock: View {
             }
 
             ForEach(sessions.prefix(5)) { session in
-                HStack(alignment: .top, spacing: 8) {
-                    Circle()
-                        .fill(Theme.statusColor(session.status))
-                        .frame(width: 5, height: 5)
-                        .padding(.top, 4)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(session.label)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(.white.opacity(0.88))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Text(subtitle(session))
-                            .font(.system(size: 9.5))
-                            .foregroundStyle(.white.opacity(0.36))
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
+                SessionRow(session: session, subtitle: subtitle(session)) {
+                    onFocus(session)
                 }
             }
         }
@@ -339,6 +326,55 @@ struct SessionsBlock: View {
         let desde = s.statusSince ?? s.updatedAt
         let estado = s.status == .busy ? "ocupada há" : "ociosa há"
         return "\(origem) · \(s.shortDirectory) · \(estado) \(Format.elapsed(since: desde))"
+    }
+}
+
+/// Linha de sessão. Clicar traz o terminal dela para frente.
+struct SessionRow: View {
+    let session: LiveSession
+    let subtitle: String
+    let onFocus: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(Theme.statusColor(session.status))
+                .frame(width: 5, height: 5)
+                .padding(.top, 5)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(session.label)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Text(subtitle)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.white.opacity(0.36))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            Image(systemName: session.pid != nil ? "arrow.up.forward.app" : "folder")
+                .font(.system(size: 10))
+                .foregroundStyle(.white.opacity(hovering ? 0.55 : 0))
+                .padding(.top, 2)
+        }
+        .padding(.vertical, 3)
+        .padding(.horizontal, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.white.opacity(hovering ? 0.06 : 0))
+        )
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
+        .onTapGesture(perform: onFocus)
+        .help(session.pid != nil
+              ? "Trazer o terminal desta sessão para frente"
+              : "Abrir \(session.shortDirectory) no Finder")
     }
 }
 

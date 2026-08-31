@@ -53,6 +53,10 @@ Apple Developer, necessária apenas para distribuir a terceiros com notarizaçã
 
 Rode uma vez só: recriar o certificado zera as permissões já concedidas.
 
+Na primeira assinatura o macOS pede autorização para o `codesign` usar a chave.
+Escolha **Sempre Permitir**: com "Permitir", ele volta a perguntar a cada build,
+e enquanto o diálogo estiver aberto qualquer `codesign` fica travado esperando.
+
 ### 2. Ajustes de máquina
 
 ```bash
@@ -95,6 +99,22 @@ printf %s "$SUA_CHAVE" | ./.build/debug/tdauth set minimax
 Lê de stdin para a chave não aparecer em `argv` nem no histórico do shell.
 Guarda em `credentials.json` com modo `0600`. Use `--keychain` para preferir o
 chaveiro.
+
+## Sessões
+
+Clicar numa sessão traz o terminal dela para frente.
+
+O processo do agente não é um aplicativo: ele é filho de um shell, que é filho
+do terminal. O app sobe a árvore de processos até achar algo que o sistema
+reconheça como aplicativo, e ativa.
+
+Selecionar a aba certa depende do terminal. Terminal e iTerm2 expõem o TTY de
+cada aba por AppleScript, e nesses o app acerta a aba. Warp, Ghostty e a
+maioria dos outros não expõem, e ali o melhor possível é trazer a janela à
+frente.
+
+Sessão do opencode não tem processo associado, então o clique abre a pasta de
+trabalho no Finder.
 
 ## Notion
 

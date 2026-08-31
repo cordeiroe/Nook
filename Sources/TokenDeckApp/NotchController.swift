@@ -186,7 +186,8 @@ final class NotchController: NSObject, ObservableObject {
                     onClipboardCopy: { _ in }, onClipboardRemove: { _ in },
                     onClipboardClear: {},
                     onMediaCommand: { _ in },
-                    onNotionSave: { _ in nil }
+                    onNotionSave: { _ in nil },
+                    onFocusSession: { _ in }
                 )
                 .frame(width: Self.cardWidth)
             )
