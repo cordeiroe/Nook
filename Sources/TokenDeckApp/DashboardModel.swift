@@ -45,6 +45,18 @@ final class DashboardModel: ObservableObject {
             }
         }
 
+        // A área de transferência não notifica ninguém: o store compara o
+        // changeCount num timer próprio e avisa só quando algo entra.
+        if config.modules.contains(ModuleKind.clipboard.rawValue) {
+            builder.clipboard.start(
+                retentionHours: config.clipboardRetentionHours,
+                maxItems: config.clipboardMaxItems,
+                ignoredApps: config.clipboardIgnoredApps
+            ) {
+                Task { @MainActor in await DashboardModel.shared.refresh() }
+            }
+        }
+
         // Os limites reais do plano sao reescritos pela statusline a cada
         // render do Claude Code. Esperar o ciclo de 15s desperdicaria a fonte
         // mais fresca que temos, justamente no numero que mais importa.
@@ -83,6 +95,7 @@ final class DashboardModel: ObservableObject {
     func stop() {
         pump?.cancel()
         pump = nil
+        builder.clipboard.stop()
         limitsWatcher?.stop()
         sessionsWatcher?.stop()
         limitsWatcher = nil
@@ -91,6 +104,20 @@ final class DashboardModel: ObservableObject {
 
     func addToShelf(_ urls: [URL]) {
         urls.forEach { builder.shelf.add($0) }
+        Task { await refresh() }
+    }
+
+    func copyBack(_ item: ClipboardItem) {
+        builder.clipboard.copyBack(item)
+    }
+
+    func removeFromClipboard(_ item: ClipboardItem) {
+        builder.clipboard.remove(item)
+        Task { await refresh() }
+    }
+
+    func clearClipboard() {
+        builder.clipboard.clear()
         Task { await refresh() }
     }
 

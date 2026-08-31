@@ -22,6 +22,12 @@ final class NotchController: NSObject, ObservableObject {
     /// antes de a view existir, e ela muda com o conteudo.
     @Published private(set) var cardHeight: CGFloat = 240
 
+    /// Verdadeiro quando o conteúdo não cabe e o cartão precisa rolar.
+    @Published private(set) var cardScrolls = false
+
+    /// Fração máxima da altura da tela que o cartão pode ocupar.
+    private static let maxHeightFraction: CGFloat = 0.66
+
     static let cardWidth: CGFloat = 380
 
     private var panel: NotchPanel?
@@ -155,17 +161,28 @@ final class NotchController: NSObject, ObservableObject {
     private func remeasure() {
         let probe = NSHostingView(
             rootView: AnyView(
-                NotchCard(
+                NotchCardContent(
                     snapshot: model.snapshot,
                     modules: model.enabledModules,
-                    onDrop: { _ in }, onRemove: { _ in }
+                    config: model.config,
+                    onDrop: { _ in }, onRemove: { _ in },
+                    onClipboardCopy: { _ in }, onClipboardRemove: { _ in },
+                    onClipboardClear: {}
                 )
                 .frame(width: Self.cardWidth)
             )
         )
-        let height = probe.fittingSize.height
-        guard abs(height - cardHeight) > 0.5 else { return }
+        let natural = probe.fittingSize.height
+
+        // O espaço disponível é o que sobra abaixo do notch.
+        let available = (geometry.map { $0.screenFrame.height - $0.notchRect.height } ?? 800)
+        let ceiling = available * Self.maxHeightFraction
+        let height = min(natural, ceiling)
+        let scrolls = natural > ceiling + 0.5
+
+        guard abs(height - cardHeight) > 0.5 || scrolls != cardScrolls else { return }
         cardHeight = height
+        cardScrolls = scrolls
         if isOpen { applyFrame(animated: false) }
     }
 

@@ -67,6 +67,7 @@ public struct DashboardSnapshot: Sendable, Equatable {
     public var providers: [ProviderSummary] = []
     public var nowPlaying: NowPlaying?
     public var shelf: [ShelfItem] = []
+    public var clipboard: [ClipboardItem] = []
     public var shelfAccess: ShelfStore.Access = .ok
     public var capturedAt: Date = .distantPast
     public var errors: [String] = []
@@ -93,6 +94,7 @@ public final class DashboardBuilder: @unchecked Sendable {
     private let music = NowPlayingReader()
     private let limits = ClaudeLimitsReader()
     public let shelf = ShelfStore()
+    public let clipboard = ClipboardStore()
 
     public init() {
         Self.migrateIfNeeded()
@@ -132,6 +134,10 @@ public final class DashboardBuilder: @unchecked Sendable {
         ]
         if config.modules.contains(ModuleKind.nowPlaying.rawValue) {
             snap.nowPlaying = music.read()
+        }
+
+        if config.modules.contains(ModuleKind.clipboard.rawValue) {
+            snap.clipboard = clipboard.current
         }
 
         if config.modules.contains(ModuleKind.shelf.rawValue) {

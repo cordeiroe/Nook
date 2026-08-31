@@ -25,7 +25,27 @@ public struct Config: Codable, Sendable, Equatable {
         ModuleKind.usage.rawValue,
         ModuleKind.sessions.rawValue,
         ModuleKind.nowPlaying.rawValue,
+        ModuleKind.clipboard.rawValue,
         ModuleKind.shelf.rawValue,
+    ]
+
+    /// Quanto tempo o histórico da área de transferência sobrevive. Curto de
+    /// propósito: é a última defesa contra um segredo que escapou dos filtros.
+    public var clipboardRetentionHours: Double = 8
+    public var clipboardMaxItems: Int = 40
+
+    /// Cópias vindas destes aplicativos nunca são guardadas, tenham marcador
+    /// de conteúdo protegido ou não.
+    public var clipboardIgnoredApps: [String] = [
+        "com.1password.1password",
+        "com.agilebits.onepassword7",
+        "com.bitwarden.desktop",
+        "org.keepassxc.keepassxc",
+        "com.apple.keychainaccess",
+        "com.apple.Passwords",
+        "com.lastpass.LastPass",
+        "com.dashlane.dashlanephonefinal",
+        "me.proton.pass.electron",
     ]
 
     /// A partir de que fracao o notch acende o arco de alerta.
@@ -50,6 +70,7 @@ public struct Config: Codable, Sendable, Equatable {
         case openCodeMonthlyBudgetUSD, claudeFiveHourTokenCeiling, claudeWeeklyTokenCeiling
         case claudeDailyTokenCeiling, claudeMonthlyTokenCeiling
         case refreshInterval, panelEnabled, notchScreenNumber, modules, alertThreshold
+        case clipboardRetentionHours, clipboardMaxItems, clipboardIgnoredApps
     }
 
     public init(from decoder: Decoder) throws {
@@ -65,6 +86,9 @@ public struct Config: Codable, Sendable, Equatable {
         panelEnabled = try c.decodeIfPresent(Bool.self, forKey: .panelEnabled) ?? fallback.panelEnabled
         modules = try c.decodeIfPresent([String].self, forKey: .modules) ?? fallback.modules
         alertThreshold = try c.decodeIfPresent(Double.self, forKey: .alertThreshold) ?? fallback.alertThreshold
+        clipboardRetentionHours = try c.decodeIfPresent(Double.self, forKey: .clipboardRetentionHours) ?? fallback.clipboardRetentionHours
+        clipboardMaxItems = try c.decodeIfPresent(Int.self, forKey: .clipboardMaxItems) ?? fallback.clipboardMaxItems
+        clipboardIgnoredApps = try c.decodeIfPresent([String].self, forKey: .clipboardIgnoredApps) ?? fallback.clipboardIgnoredApps
         notchScreenNumber = try c.decodeIfPresent(Int.self, forKey: .notchScreenNumber)
     }
 

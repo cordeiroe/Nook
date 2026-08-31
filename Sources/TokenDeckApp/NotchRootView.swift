@@ -27,12 +27,19 @@ struct NotchRootView: View {
             neck
             if controller.isOpen {
                 NotchCard(
-                    snapshot: model.snapshot,
-                    modules: model.enabledModules,
-                    onDrop: model.addToShelf,
-                    onRemove: model.removeFromShelf
+                    content: NotchCardContent(
+                        snapshot: model.snapshot,
+                        modules: model.enabledModules,
+                        config: model.config,
+                        onDrop: model.addToShelf,
+                        onRemove: model.removeFromShelf,
+                        onClipboardCopy: model.copyBack,
+                        onClipboardRemove: model.removeFromClipboard,
+                        onClipboardClear: model.clearClipboard
+                    ),
+                    height: controller.cardHeight,
+                    scrolls: controller.cardScrolls
                 )
-                .frame(width: NotchController.cardWidth)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -71,13 +78,43 @@ struct NotchRootView: View {
     }
 }
 
-/// O cartao que desce do notch. Cada modulo e independente: se a fonte falhar,
-/// o bloco some e o resto continua.
+/// O cartão que desce do notch. Com muitos módulos o conteúdo passa de dois
+/// terços da altura da tela, então ele é limitado e rola por dentro.
 struct NotchCard: View {
+    let content: NotchCardContent
+    let height: CGFloat
+    let scrolls: Bool
+
+    var body: some View {
+        Group {
+            if scrolls {
+                ScrollView(.vertical, showsIndicators: false) { content }
+                    .frame(width: NotchController.cardWidth, height: height)
+            } else {
+                content
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.black)
+                .shadow(color: .black.opacity(0.45), radius: 20, y: 8)
+        )
+    }
+}
+
+/// Conteúdo sem moldura. Separado porque o controller precisa medir a altura
+/// natural: dentro de um ScrollView, `fittingSize` devolveria o tamanho da
+/// área visível, não o do conteúdo. Cada módulo é independente: se a fonte
+/// falhar, o bloco some e o resto continua.
+struct NotchCardContent: View {
     let snapshot: DashboardSnapshot
     let modules: [ModuleKind]
+    let config: Config
     let onDrop: ([URL]) -> Void
     let onRemove: (ShelfItem) -> Void
+    let onClipboardCopy: (ClipboardItem) -> Void
+    let onClipboardRemove: (ClipboardItem) -> Void
+    let onClipboardClear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -94,11 +131,6 @@ struct NotchCard: View {
         }
         .padding(16)
         .frame(width: NotchController.cardWidth)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.black)
-                .shadow(color: .black.opacity(0.45), radius: 20, y: 8)
-        )
     }
 
     /// So entram modulos implementados e que tenham o que mostrar.
@@ -109,6 +141,7 @@ struct NotchCard: View {
             case .sessions:   return !snapshot.sessions.isEmpty
             case .nowPlaying: return snapshot.nowPlaying != nil
             case .shelf:      return true
+            case .clipboard:  return true
             default:          return false
             }
         }
@@ -127,6 +160,14 @@ struct NotchCard: View {
             if let playing = snapshot.nowPlaying {
                 NowPlayingBlock(playing: playing)
             }
+        case .clipboard:
+            ClipboardBlock(
+                items: snapshot.clipboard,
+                retentionHours: config.clipboardRetentionHours,
+                onCopy: onClipboardCopy,
+                onRemove: onClipboardRemove,
+                onClear: onClipboardClear
+            )
         case .shelf:
             ShelfBlock(
                 items: snapshot.shelf,
