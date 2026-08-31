@@ -48,10 +48,21 @@ final class DashboardModel: ObservableObject {
         // A área de transferência não notifica ninguém: o store compara o
         // changeCount num timer próprio e avisa só quando algo entra.
         if config.modules.contains(ModuleKind.clipboard.rawValue) {
+            let shelf = builder.shelf
+            let guardarImagens = config.shelfCapturesPastedImages
+                && config.modules.contains(ModuleKind.shelf.rawValue)
+
+            // Tipo explícito: sem ele o closure herdaria o Bool de addImage.
+            var aoReceberImagem: (@Sendable (Data) -> Void)?
+            if guardarImagens {
+                aoReceberImagem = { data in _ = shelf.addImage(data) }
+            }
+
             builder.clipboard.start(
                 retentionHours: config.clipboardRetentionHours,
                 maxItems: config.clipboardMaxItems,
-                ignoredApps: config.clipboardIgnoredApps
+                ignoredApps: config.clipboardIgnoredApps,
+                onImage: aoReceberImagem
             ) {
                 Task { @MainActor in await DashboardModel.shared.refresh() }
             }

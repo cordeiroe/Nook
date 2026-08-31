@@ -4,9 +4,9 @@ Painel no notch do macOS para acompanhar consumo de IA e sessões em andamento,
 sem precisar abrir nada.
 
 Em repouso, nada é desenhado: o próprio recorte da tela é o alvo do mouse. Ao
-passar o cursor, um cartão desce com os limites do plano, as sessões vivas, o
-que está tocando e uma prateleira de arquivos. Quando um limite passa de 80%,
-um arco fino acende na borda inferior do notch.
+passar o cursor, um cartão desce com abas, uma por módulo, e mostra um de cada
+vez. Quando um limite passa de 80%, um arco fino acende na borda inferior do
+notch.
 
 Em telas sem notch físico, o painel usa um recorte virtual no centro do topo e
 se comporta igual.
@@ -29,7 +29,7 @@ exceção: a consulta de cota da MiniMax, que vai para a API deles.
 | Sessões, custo e tokens do opencode | `~/.local/share/opencode/opencode.db` (somente leitura) |
 | Cota da MiniMax | `GET /v1/token_plan/remains` |
 | Tocando agora | AppleScript no Spotify e no app Música |
-| Capturas recentes | pasta configurada em `com.apple.screencapture` |
+| Capturas recentes | pasta de capturas e imagens na área de transferência |
 | Área de transferência | `NSPasteboard`, consultada a cada 0,6s |
 
 ## Instalação
@@ -101,6 +101,7 @@ chaveiro.
 ```jsonc
 {
   "modules": ["usage", "sessions", "nowPlaying", "clipboard", "shelf"],
+  "selectedModule": "usage",         // aba aberta
   "alertThreshold": 0.80,          // quando o arco do notch acende
   "openCodeMonthlyBudgetUSD": 50,  // denominador do gasto MiniMax
   "refreshInterval": 15,           // ciclo de fundo, em segundos
@@ -165,6 +166,13 @@ Nada é versionado nem transmitido, fora a chamada de cota à MiniMax.
   aparece sozinho.
 - A pasta de capturas costuma ser protegida por TCC. O bloco da prateleira tem
   um atalho para o painel de autorização.
+- Com Cmd+Shift+5, o macOS segura o arquivo numa pasta temporária enquanto a
+  miniatura flutuante está na tela, e só o move para o destino quando ela
+  expira. Quem arrasta ou cola a miniatura antes disso consome o arquivo de lá,
+  e nada chega à pasta de capturas. Por isso a prateleira também guarda imagens
+  que passam pela área de transferência: é o que pega esse fluxo. Essas são a
+  única exceção à regra de guardar caminhos, porque não existe original para
+  apontar. Desligue em `shelfCapturesPastedImages`.
 
 ## Estrutura
 

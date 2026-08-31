@@ -23,6 +23,19 @@ public enum ModuleKind: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// Icone da aba.
+    public var symbol: String {
+        switch self {
+        case .usage:      return "gauge.with.dots.needle.33percent"
+        case .sessions:   return "terminal"
+        case .nowPlaying: return "music.note"
+        case .calendar:   return "calendar"
+        case .clipboard:  return "doc.on.clipboard"
+        case .shelf:      return "tray.full"
+        case .notion:     return "note.text"
+        }
+    }
+
     /// Modulos ainda nao implementados aparecem na config mas nao desenham nada.
     public var isImplemented: Bool {
         switch self {

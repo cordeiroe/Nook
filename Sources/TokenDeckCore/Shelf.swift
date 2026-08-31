@@ -7,6 +7,9 @@ public struct ShelfItem: Sendable, Equatable, Identifiable, Codable {
         case screenshot
         /// Arrastada pelo usuario pro painel.
         case dropped
+        /// Imagem que chegou pela area de transferencia. Diferente das outras,
+        /// esta e uma copia nossa em disco, porque nao existe arquivo original.
+        case pasted
     }
 
     public let id: String
@@ -37,6 +40,13 @@ public final class ShelfStore: @unchecked Sendable {
     /// Quanto tempo uma captura fica listada sozinha.
     public static let screenshotWindow: TimeInterval = 12 * 3600
     public static let maximum = 12
+
+    /// Onde ficam as copias de imagens vindas da area de transferencia.
+    public static var imageDirectory: URL {
+        let dir = Paths.support.appending(path: "shelf-images")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
 
     private var items: [ShelfItem] = []
     private let lock = NSLock()
@@ -92,7 +102,7 @@ public final class ShelfStore: @unchecked Sendable {
         items.append(contentsOf: found)
         items.removeAll { !$0.exists }
         items.sort { $0.addedAt > $1.addedAt }
-        if items.count > Self.maximum { items = Array(items.prefix(Self.maximum)) }
+        prune()
         lock.unlock()
         save()
     }
@@ -100,6 +110,47 @@ public final class ShelfStore: @unchecked Sendable {
     public var current: [ShelfItem] {
         lock.lock(); defer { lock.unlock() }
         return items
+    }
+
+    /// Guarda uma imagem que veio da area de transferencia.
+    ///
+    /// Com Cmd+Shift+5 o macOS segura o arquivo numa pasta temporaria enquanto
+    /// a miniatura flutuante esta na tela, e so move pro destino quando ela
+    /// expira. Quem arrasta ou cola a miniatura antes disso consome o arquivo
+    /// de la, e nada nunca chega na pasta de capturas. Por isso a area de
+    /// transferencia e a fonte que realmente pega o fluxo do usuario.
+    ///
+    /// Aqui, ao contrario do resto da prateleira, gravamos uma copia: nao
+    /// existe arquivo original pra apontar.
+    @discardableResult
+    public func addImage(_ data: Data, suggestedName: String? = nil) -> Bool {
+        let stamp = ISO8601DateFormatter().string(from: Date())
+            .replacingOccurrences(of: ":", with: "-")
+        let name = suggestedName ?? "Captura \(stamp).png"
+        let url = Self.imageDirectory.appending(path: name)
+
+        guard let png = Self.pngData(from: data) else { return false }
+        do {
+            try png.write(to: url, options: .atomic)
+        } catch {
+            return false
+        }
+
+        lock.lock()
+        items.insert(ShelfItem(url: url, origin: .pasted), at: 0)
+        prune()
+        lock.unlock()
+        save()
+        return true
+    }
+
+    /// A area de transferencia pode trazer TIFF; a prateleira grava sempre PNG.
+    private static func pngData(from data: Data) -> Data? {
+        if data.count > 8, data.prefix(8) == Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+            return data
+        }
+        guard let rep = NSBitmapImageRep(data: data) else { return nil }
+        return rep.representation(using: .png, properties: [:])
     }
 
     @discardableResult
@@ -119,7 +170,16 @@ public final class ShelfStore: @unchecked Sendable {
         lock.lock()
         items.removeAll { $0.id == item.id }
         lock.unlock()
+        discardIfOwned(item)
         save()
+    }
+
+    /// Arquivo do usuario nunca e apagado. So as copias que nos mesmos criamos.
+    private func discardIfOwned(_ item: ShelfItem) {
+        guard item.origin == .pasted,
+              item.url.deletingLastPathComponent().path == Self.imageDirectory.path
+        else { return }
+        try? FileManager.default.removeItem(at: item.url)
     }
 
     public func clearDropped() {
@@ -158,6 +218,20 @@ public final class ShelfStore: @unchecked Sendable {
     }
 
     // MARK: - Privado
+
+    /// Expira copias antigas e corta o excesso, apagando do disco o que era
+    /// nosso. Precisa ser chamado com o lock ja tomado.
+    private func prune() {
+        let cutoff = Date().addingTimeInterval(-Self.screenshotWindow)
+        let vencidos = items.filter { $0.origin == .pasted && $0.addedAt < cutoff }
+        items.removeAll { $0.origin == .pasted && $0.addedAt < cutoff }
+        if items.count > Self.maximum {
+            let cortados = Array(items.dropFirst(Self.maximum))
+            items = Array(items.prefix(Self.maximum))
+            cortados.forEach(discardIfOwned)
+        }
+        vencidos.forEach(discardIfOwned)
+    }
 
     private static let imageTypes: Set<String> = ["png", "jpg", "jpeg", "heic", "gif", "tiff"]
 

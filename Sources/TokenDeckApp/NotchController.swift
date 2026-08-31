@@ -25,6 +25,10 @@ final class NotchController: NSObject, ObservableObject {
     /// Verdadeiro quando o conteúdo não cabe e o cartão precisa rolar.
     @Published private(set) var cardScrolls = false
 
+    /// Aba aberta. Um módulo por vez em vez de todos empilhados: com cinco
+    /// blocos o cartão passava de dois terços da tela.
+    @Published private(set) var selected: ModuleKind = .usage
+
     /// Fração máxima da altura da tela que o cartão pode ocupar.
     private static let maxHeightFraction: CGFloat = 0.66
 
@@ -52,6 +56,10 @@ final class NotchController: NSObject, ObservableObject {
         }
         guard let geo = NotchGeometry.detect(preferring: model.config.notchScreenNumber) else { return }
         geometry = geo
+        selected = ModuleKind(rawValue: model.config.selectedModule)
+            .flatMap { model.enabledModules.contains($0) ? $0 : nil }
+            ?? model.enabledModules.first
+            ?? .usage
 
         let panel = NotchPanel(
             contentRect: geo.collapsedFrame,
@@ -116,6 +124,13 @@ final class NotchController: NSObject, ObservableObject {
         relocate()
     }
 
+    func select(_ module: ModuleKind) {
+        guard module != selected else { return }
+        selected = module
+        model.config.selectedModule = module.rawValue
+        remeasure()
+    }
+
     // MARK: - Abrir e fechar
 
     func setPointerInside(_ inside: Bool) {
@@ -164,7 +179,9 @@ final class NotchController: NSObject, ObservableObject {
                 NotchCardContent(
                     snapshot: model.snapshot,
                     modules: model.enabledModules,
+                    selected: selected,
                     config: model.config,
+                    onSelect: { _ in },
                     onDrop: { _ in }, onRemove: { _ in },
                     onClipboardCopy: { _ in }, onClipboardRemove: { _ in },
                     onClipboardClear: {}

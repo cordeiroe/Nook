@@ -50,6 +50,7 @@ public final class ClipboardStore: @unchecked Sendable {
     private var retention: TimeInterval = 8 * 3600
     private var maximum: Int = 40
     private var ignoredApps: Set<String> = []
+    private var onImage: (@Sendable (Data) -> Void)?
 
     public init() {
         file = Paths.support.appending(path: "clipboard.json")
@@ -59,9 +60,14 @@ public final class ClipboardStore: @unchecked Sendable {
 
     // MARK: - Captura
 
+    /// - Parameter onImage: recebe imagens que passam pela area de
+    ///   transferencia. Elas nao entram no historico de texto; quem decide o
+    ///   que fazer com elas e quem chamou.
     public func start(retentionHours: Double, maxItems: Int, ignoredApps: [String],
+                      onImage: (@Sendable (Data) -> Void)? = nil,
                       onChange: @escaping @Sendable () -> Void) {
         stop()
+        self.onImage = onImage
         self.retention = max(60, retentionHours * 3600)
         self.maximum = max(1, maxItems)
         self.ignoredApps = Set(ignoredApps.map { $0.lowercased() })
@@ -81,6 +87,7 @@ public final class ClipboardStore: @unchecked Sendable {
     public func stop() {
         timer?.cancel()
         timer = nil
+        onImage = nil
     }
 
     /// Devolve true quando algo novo entrou no histórico.
@@ -96,6 +103,15 @@ public final class ClipboardStore: @unchecked Sendable {
         let app = NSWorkspace.shared.frontmostApplication
         if let bundle = app?.bundleIdentifier?.lowercased(), ignoredApps.contains(bundle) {
             return false
+        }
+
+        // Imagem vem antes do texto: uma captura traz PNG e, as vezes, tambem
+        // um caminho como string. Guardar o caminho seria inutil, porque o
+        // arquivo temporario da captura some.
+        if let handler = onImage,
+           let data = pb.data(forType: .png) ?? pb.data(forType: .tiff) {
+            handler(data)
+            return true
         }
 
         guard let text = pb.string(forType: .string) else { return false }

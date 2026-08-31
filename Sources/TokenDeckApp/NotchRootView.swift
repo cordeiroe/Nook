@@ -30,7 +30,9 @@ struct NotchRootView: View {
                     content: NotchCardContent(
                         snapshot: model.snapshot,
                         modules: model.enabledModules,
+                        selected: controller.selected,
                         config: model.config,
+                        onSelect: controller.select,
                         onDrop: model.addToShelf,
                         onRemove: model.removeFromShelf,
                         onClipboardCopy: model.copyBack,
@@ -104,12 +106,16 @@ struct NotchCard: View {
 
 /// Conteúdo sem moldura. Separado porque o controller precisa medir a altura
 /// natural: dentro de um ScrollView, `fittingSize` devolveria o tamanho da
-/// área visível, não o do conteúdo. Cada módulo é independente: se a fonte
-/// falhar, o bloco some e o resto continua.
+/// área visível, não o do conteúdo.
+///
+/// Um módulo por vez, escolhido nas abas. Empilhar todos passava de dois terços
+/// da tela e obrigava a rolar para ver o que importa.
 struct NotchCardContent: View {
     let snapshot: DashboardSnapshot
     let modules: [ModuleKind]
+    let selected: ModuleKind
     let config: Config
+    let onSelect: (ModuleKind) -> Void
     let onDrop: ([URL]) -> Void
     let onRemove: (ShelfItem) -> Void
     let onClipboardCopy: (ClipboardItem) -> Void
@@ -117,48 +123,41 @@ struct NotchCardContent: View {
     let onClipboardClear: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if snapshot.providers.isEmpty && snapshot.capturedAt == .distantPast {
-                loading
-            } else {
-                ForEach(Array(visible.enumerated()), id: \.element) { index, module in
-                    if index > 0 {
-                        Divider().overlay(Color.white.opacity(0.10)).padding(.vertical, 12)
-                    }
-                    block(for: module)
-                }
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            ModuleTabs(modules: modules, selected: selected, onSelect: onSelect)
+            block(for: selected)
         }
-        .padding(16)
+        .padding(14)
         .frame(width: NotchController.cardWidth)
-    }
-
-    /// So entram modulos implementados e que tenham o que mostrar.
-    private var visible: [ModuleKind] {
-        modules.filter { module in
-            switch module {
-            case .usage:      return !snapshot.providers.isEmpty
-            case .sessions:   return !snapshot.sessions.isEmpty
-            case .nowPlaying: return snapshot.nowPlaying != nil
-            case .shelf:      return true
-            case .clipboard:  return true
-            default:          return false
-            }
-        }
     }
 
     @ViewBuilder
     private func block(for module: ModuleKind) -> some View {
         switch module {
         case .usage:
-            VStack(alignment: .leading, spacing: 13) {
-                ForEach(snapshot.providers) { ProviderBlock(provider: $0) }
+            if snapshot.providers.isEmpty {
+                Placeholder(text: "Lendo consumo…", loading: true)
+            } else {
+                VStack(alignment: .leading, spacing: 13) {
+                    ForEach(Array(snapshot.providers.enumerated()), id: \.element.id) { index, provider in
+                        if index > 0 {
+                            Divider().overlay(Color.white.opacity(0.10))
+                        }
+                        ProviderBlock(provider: provider)
+                    }
+                }
             }
         case .sessions:
-            SessionsBlock(sessions: snapshot.sessions)
+            if snapshot.sessions.isEmpty {
+                Placeholder(text: "Nenhuma sessão rodando.")
+            } else {
+                SessionsBlock(sessions: snapshot.sessions)
+            }
         case .nowPlaying:
             if let playing = snapshot.nowPlaying {
                 NowPlayingBlock(playing: playing)
+            } else {
+                Placeholder(text: "Nada tocando no Spotify nem no app Música.")
             }
         case .clipboard:
             ClipboardBlock(
@@ -176,21 +175,86 @@ struct NotchCardContent: View {
                 onRemove: onRemove
             )
         default:
-            EmptyView()
+            Placeholder(text: "Módulo ainda não implementado.")
         }
-    }
-
-    private var loading: some View {
-        HStack(spacing: 8) {
-            ProgressView().controlSize(.small)
-            Text("Lendo consumo…")
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 8)
     }
 }
+
+/// Abas dos módulos. A selecionada mostra o rótulo; as outras, só o ícone.
+struct ModuleTabs: View {
+    let modules: [ModuleKind]
+    let selected: ModuleKind
+    let onSelect: (ModuleKind) -> Void
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(modules, id: \.self) { module in
+                Button { onSelect(module) } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: module.symbol)
+                            .font(.system(size: 12, weight: .medium))
+                        if module == selected {
+                            Text(module.label)
+                                .font(.system(size: 11.5, weight: .medium))
+                                .fixedSize()
+                        }
+                    }
+                    .padding(.horizontal, module == selected ? 9 : 6)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule().fill(Color.white.opacity(module == selected ? 0.15 : 0))
+                    )
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white.opacity(module == selected ? 0.95 : 0.42))
+                .help(module.label)
+            }
+
+            Spacer(minLength: 4)
+            SettingsMenu()
+        }
+        .animation(.easeOut(duration: 0.15), value: selected)
+    }
+}
+
+struct SettingsMenu: View {
+    var body: some View {
+        Menu {
+            Button("Abrir pasta de ajustes") { NSWorkspace.shared.open(Paths.support) }
+            if NSScreen.screens.count > 1 {
+                Button("Trocar de tela") { AppDelegate.current?.notch?.cycleScreen() }
+            }
+            Divider()
+            Button("Sair do TokenDeck") { NSApplication.shared.terminate(nil) }
+        } label: {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 11))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(.white.opacity(0.4))
+    }
+}
+
+struct Placeholder: View {
+    let text: String
+    var loading: Bool = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if loading { ProgressView().controlSize(.small) }
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.35))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+    }
+}
+
 
 struct ProviderBlock: View {
     let provider: ProviderSummary

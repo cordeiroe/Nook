@@ -34,6 +34,12 @@ public struct Config: Codable, Sendable, Equatable {
     public var clipboardRetentionHours: Double = 8
     public var clipboardMaxItems: Int = 40
 
+    /// Imagens que passam pela área de transferência viram itens da prateleira.
+    /// Com Cmd+Shift+5, arrastar ou colar a miniatura flutuante consome o
+    /// arquivo temporário antes de ele chegar à pasta de capturas, então esta
+    /// é a única forma de pegá-las nesse fluxo.
+    public var shelfCapturesPastedImages: Bool = true
+
     /// Cópias vindas destes aplicativos nunca são guardadas, tenham marcador
     /// de conteúdo protegido ou não.
     public var clipboardIgnoredApps: [String] = [
@@ -47,6 +53,9 @@ public struct Config: Codable, Sendable, Equatable {
         "com.dashlane.dashlanephonefinal",
         "me.proton.pass.electron",
     ]
+
+    /// Aba aberta da última vez.
+    public var selectedModule: String = ModuleKind.usage.rawValue
 
     /// A partir de que fracao o notch acende o arco de alerta.
     public var alertThreshold: Double = 0.80
@@ -70,7 +79,8 @@ public struct Config: Codable, Sendable, Equatable {
         case openCodeMonthlyBudgetUSD, claudeFiveHourTokenCeiling, claudeWeeklyTokenCeiling
         case claudeDailyTokenCeiling, claudeMonthlyTokenCeiling
         case refreshInterval, panelEnabled, notchScreenNumber, modules, alertThreshold
-        case clipboardRetentionHours, clipboardMaxItems, clipboardIgnoredApps
+        case clipboardRetentionHours, clipboardMaxItems, clipboardIgnoredApps, selectedModule
+        case shelfCapturesPastedImages
     }
 
     public init(from decoder: Decoder) throws {
@@ -85,10 +95,12 @@ public struct Config: Codable, Sendable, Equatable {
         refreshInterval = try c.decodeIfPresent(Double.self, forKey: .refreshInterval) ?? fallback.refreshInterval
         panelEnabled = try c.decodeIfPresent(Bool.self, forKey: .panelEnabled) ?? fallback.panelEnabled
         modules = try c.decodeIfPresent([String].self, forKey: .modules) ?? fallback.modules
+        selectedModule = try c.decodeIfPresent(String.self, forKey: .selectedModule) ?? fallback.selectedModule
         alertThreshold = try c.decodeIfPresent(Double.self, forKey: .alertThreshold) ?? fallback.alertThreshold
         clipboardRetentionHours = try c.decodeIfPresent(Double.self, forKey: .clipboardRetentionHours) ?? fallback.clipboardRetentionHours
         clipboardMaxItems = try c.decodeIfPresent(Int.self, forKey: .clipboardMaxItems) ?? fallback.clipboardMaxItems
         clipboardIgnoredApps = try c.decodeIfPresent([String].self, forKey: .clipboardIgnoredApps) ?? fallback.clipboardIgnoredApps
+        shelfCapturesPastedImages = try c.decodeIfPresent(Bool.self, forKey: .shelfCapturesPastedImages) ?? fallback.shelfCapturesPastedImages
         notchScreenNumber = try c.decodeIfPresent(Int.self, forKey: .notchScreenNumber)
     }
 
